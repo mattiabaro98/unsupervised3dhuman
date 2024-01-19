@@ -13,7 +13,7 @@ class point_net_ssg(nn.Module):
         trans_classes=3,
         gRT_classes=6,
         normal_channel=False,
-        smpl_mean_file="../smpl_models/neutral_smpl_mean_params.h5",
+        smpl_mean_file="./smpl_models/neutral_smpl_mean_params.h5",
         device="cpu",
     ):
         super(point_net_ssg, self).__init__()
@@ -60,7 +60,7 @@ class point_net_ssg(nn.Module):
         self.register_buffer("init_pose", init_pose)
         self.register_buffer("init_shape", init_shape)
 
-    def forward(self, xyz, init_pose=None, init_shape=None, init_trans=None, n_iter=3):
+    def forward(self, xyz, init_pose=None, init_shape=None, init_trans=None, n_iter=10):
         batch_size, _, _ = xyz.shape
 
         if init_pose is None:
