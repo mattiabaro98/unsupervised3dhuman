@@ -1,8 +1,10 @@
 from __future__ import print_function, division
+
 # import argparse
 # import os, shutil
 import torch
-# import torch.optim as optim
+
+import torch.optim as optim
 import trimesh
 import joblib
 import smplx
@@ -43,9 +45,9 @@ device = torch.device("cpu")
 
 # --------pytorch model and optimizer is the key
 model = point_net_ssg(device=device).to(device).eval()
-# model.load_state_dict(torch.load(opt.restore_path, map_location=device))
+model.load_state_dict(torch.load("./pretrained/model_best_depth.pth", map_location=device))
 
-# optimizer = optim.Adam(model.parameters())
+optimizer = optim.Adam(model.parameters())
 smplmodel = smplx.create("./smpl_models/", model_type="smpl", gender="male", ext="pkl").to(device)
 
 # -- intial EM
@@ -75,7 +77,7 @@ depthEM = surface_EM_depth(
 
 
 # load mesh and sampling
-mesh = trimesh.load("./demo/demo_depth/00003200.ply") #shortshort_flying_eagle.000075_depth
+mesh = trimesh.load("./demo/demo_depth/00003200.ply")  # shortshort_flying_eagle.000075_depth
 point_o = mesh.vertices
 pts = torch.from_numpy(point_o).float()
 index = farthest_point_sample(pts.unsqueeze(0), npoint=2048).squeeze()
@@ -99,18 +101,20 @@ pred_R6D_3D = quaternion_to_axis_angle(matrix_to_quaternion((rotation_6d_to_matr
 pred_pose[0, 3:] = pred_pose_body.unsqueeze(0).float()
 pred_pose[0, :3] = pred_R6D_3D.unsqueeze(0).float()
 
-# pred_cam_t[0, :] = pred_trans.unsqueeze(0).float()
-# trans_back[0, :] = trans.unsqueeze(0).float()
+pred_cam_t[0, :] = pred_trans.unsqueeze(0).float()
+trans_back[0, :] = trans.unsqueeze(0).float()
 
 pred_pose[0, 16 * 3 : 18 * 3] = (
-    torch.Tensor([
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    ])
+    torch.Tensor(
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ]
+    )
     .unsqueeze(0)
     .float()
 )
@@ -119,8 +123,8 @@ new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t = d
     pred_pose.detach(), pred_betas.detach(), pred_cam_t.detach(), point_arr2
 )
 
-print(new_opt_betas)
-print(new_opt_pose)
+# print(new_opt_betas)
+# print(new_opt_pose)
 
 # # save the final results
 # output = smplmodel(
