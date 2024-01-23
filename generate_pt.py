@@ -1,16 +1,23 @@
-from __future__ import print_function, division
+from __future__ import division, print_function
+
 import argparse
-import os, shutil
+import os
+import shutil
+
+import joblib
+import smplx
 import torch
 import torch.optim as optim
 import trimesh
-import joblib
-import smplx
-from pytorch3d.transforms import rotation_6d_to_matrix, matrix_to_quaternion, quaternion_to_axis_angle
-from src.utils import farthest_point_sample
+from pytorch3d.transforms import (
+    matrix_to_quaternion,
+    quaternion_to_axis_angle,
+    rotation_6d_to_matrix,
+)
+
 from src.Network import point_net_ssg
 from src.surfaceem import surface_EM_pt
-
+from src.utils import farthest_point_sample
 
 # parsing argmument
 parser = argparse.ArgumentParser()

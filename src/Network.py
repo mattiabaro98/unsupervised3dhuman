@@ -1,8 +1,9 @@
+import h5py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import h5py
-from src.utils import PointNetSetAbstraction, PointNetFeaturePropagation
+
+from src.utils import PointNetFeaturePropagation, PointNetSetAbstraction
 
 
 class point_net_ssg(nn.Module):

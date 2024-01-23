@@ -4,6 +4,7 @@ exclude = [
     ".git",
     "__pycache__",
     "venv",
+    "lint_env",
     "env",
     "docs",
     "notebooks",
@@ -18,7 +19,6 @@ extend-ignore = [
     "W2",
     "E3",
     "W3",
-    "E401",
     "E5",
     "W5",
     # Rule too strict (no lambdas)
@@ -31,12 +31,15 @@ per-file-ignores = '''
 
 [tool.isort]
 profile = "black"
-skip_glob = ["venv/*", "env/*", "docs/*"]
+skip_glob = ["*/venv/*", "*/env/*", "*/docs/*", "*/lint_env/*"]
 
 
 [tool.black]
 line-length = 120
 exclude = '''
-    venv\/|env\/|docs\/|notebooks\/|poc\_materials\/|\.buildozer\/
+    lint_env\/|venv\/|env\/|docs\/|notebooks\/|poc\_materials\/|\.buildozer\/
 '''
 preview = true
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = "line-too-long,missing-module-docstring,missing-function-docstring,import-error,broad-exception-caught"

@@ -1,15 +1,15 @@
 from typing import Union
+
 import torch
 import torch.nn.functional as F
-from torch.autograd import Function
-from torch.autograd.function import once_differentiable
-from pytorch3d import _C
-from pytorch3d.structures import Meshes, Pointclouds
-from pytorch3d.ops.knn import knn_gather, knn_points
-
-from torch import nn
 import torch.nn.parallel
 import torch.utils.data
+from pytorch3d import _C
+from pytorch3d.ops.knn import knn_gather, knn_points
+from pytorch3d.structures import Meshes, Pointclouds
+from torch import nn
+from torch.autograd import Function
+from torch.autograd.function import once_differentiable
 
 
 def square_distance(src, dst):
@@ -310,7 +310,9 @@ class _PointFaceDistance(Function):
             face `(v0, v1, v2)`
 
         """
-        dists, idxs = _C.point_face_dist_forward(points, points_first_idx, tris, tris_first_idx, max_points)
+        dists, idxs = _C.point_face_dist_forward(
+            points, points_first_idx, tris, tris_first_idx, max_points, float(1e-5)
+        )
         ctx.save_for_backward(points, tris, idxs)
         return dists
 
@@ -319,7 +321,7 @@ class _PointFaceDistance(Function):
     def backward(ctx, grad_dists):
         grad_dists = grad_dists.contiguous()
         points, tris, idxs = ctx.saved_tensors
-        grad_points, grad_tris = _C.point_face_dist_backward(points, tris, idxs, grad_dists)
+        grad_points, grad_tris = _C.point_face_dist_backward(points, tris, idxs, grad_dists, float(1e-5))
         return grad_points, None, grad_tris, None, None
 
 
@@ -357,7 +359,8 @@ class _FacePointDistance(Function):
             where `d(u, v0, v1, v2)` is the distance of point `u` from the triangular
             face `(v0, v1, v2)`.
         """
-        dists, idxs = _C.face_point_dist_forward(points, points_first_idx, tris, tris_first_idx, max_tris)
+
+        dists, idxs = _C.face_point_dist_forward(points, points_first_idx, tris, tris_first_idx, max_tris, float(1e-5))
         ctx.save_for_backward(points, tris, idxs)
         return dists
 

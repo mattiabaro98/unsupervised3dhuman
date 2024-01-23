@@ -1,21 +1,27 @@
-from __future__ import print_function, division
+from __future__ import division, print_function
 
-# import argparse
-# import os, shutil
+import argparse
+import os  # , shutil
+
+import joblib
+import numpy as np
+import smplx
 import torch
-
 import torch.optim as optim
 import trimesh
-import joblib
-import smplx
-from pytorch3d.transforms import rotation_6d_to_matrix, matrix_to_quaternion, quaternion_to_axis_angle
-from src.utils import farthest_point_sample
+from pytorch3d.transforms import (
+    matrix_to_quaternion,
+    quaternion_to_axis_angle,
+    rotation_6d_to_matrix,
+)
+
 from src.Network import point_net_ssg
 from src.surfaceem import surface_EM_depth
-
+from src.utils import farthest_point_sample
 
 # # parsing argmument
-# parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser()
+parser.add_argument("--filename", type=str, help="PLY file for processing")
 # parser.add_argument("--batchSize", type=int, default=1, help="input batch size")
 # parser.add_argument("--gender", type=str, default="neutral", help="input male/female/neutral SMPL model")
 # parser.add_argument("--num_iters", type=int, default=50, help="num of register iters")
@@ -34,8 +40,9 @@ from src.surfaceem import surface_EM_depth
 #     default="./demo/demo_depth/shortshort_flying_eagle.000075_depth.ply",
 #     help="file for processing",
 # )
-# opt = parser.parse_args()
-# print(opt)
+args = parser.parse_args()
+input_file = args.filename
+output_file = os.path.splitext(input_file)[0] + "_smpl_params.npz"
 
 # # Load all Training settings
 # if torch.cuda.is_available():
@@ -64,7 +71,7 @@ selected_index = loaded_index["downsample_index"]
 depthEM = surface_EM_depth(
     smplxmodel=smplmodel,
     batch_size=1,
-    num_iters=50,
+    num_iters=10,
     selected_index=selected_index,
     device=device,
 )
@@ -77,7 +84,7 @@ depthEM = surface_EM_depth(
 
 
 # load mesh and sampling
-mesh = trimesh.load("./demo/demo_depth/00003200.ply")  # shortshort_flying_eagle.000075_depth
+mesh = trimesh.load(input_file)  # shortshort_flying_eagle.000075_depth
 point_o = mesh.vertices
 pts = torch.from_numpy(point_o).float()
 index = farthest_point_sample(pts.unsqueeze(0), npoint=2048).squeeze()
@@ -105,16 +112,14 @@ pred_cam_t[0, :] = pred_trans.unsqueeze(0).float()
 trans_back[0, :] = trans.unsqueeze(0).float()
 
 pred_pose[0, 16 * 3 : 18 * 3] = (
-    torch.Tensor(
-        [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ]
-    )
+    torch.Tensor([
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ])
     .unsqueeze(0)
     .float()
 )
@@ -123,10 +128,14 @@ new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t = d
     pred_pose.detach(), pred_betas.detach(), pred_cam_t.detach(), point_arr2
 )
 
-# print(new_opt_betas)
-# print(new_opt_pose)
+# Write the arrays to the file
+np.savez(
+    output_file,
+    beta=new_opt_betas.detach().cpu().numpy().reshape(10),
+    pose=new_opt_pose.detach().cpu().numpy().reshape(72),
+)
 
-# # save the final results
+# # # save the final results
 # output = smplmodel(
 #     betas=new_opt_betas,
 #     global_orient=new_opt_pose[:, :3],
@@ -135,7 +144,7 @@ new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t = d
 #     return_verts=True,
 # )
 # mesh = trimesh.Trimesh(vertices=output.vertices.detach().cpu().numpy().squeeze(), faces=smplmodel.faces, process=False)
-# mesh.export(opt.dirs_save + filename_pure + "_EM.ply")
+# mesh.export(output_file)
 # # also copy the orig files here
 # shutil.copy(file_name, opt.dirs_save + os.path.basename(file_name))
 

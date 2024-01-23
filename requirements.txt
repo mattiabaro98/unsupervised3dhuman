@@ -24,7 +24,6 @@ nvidia-nvjitlink-cu12==12.3.101
 nvidia-nvtx-cu12==12.1.105
 pillow==10.2.0
 portalocker==2.8.2
-pytorch3d==0.7.5
 PyYAML==6.0.1
 scipy==1.12.0
 six==1.16.0

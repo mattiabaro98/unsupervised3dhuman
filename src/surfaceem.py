@@ -1,5 +1,7 @@
-import torch
 import numpy as np
+import torch
+from tqdm import tqdm
+
 from src.customloss import body_fitting_loss_em
 from src.prior import MaxMixturePrior
 
@@ -13,7 +15,7 @@ class surface_EM_pt:
         smplxmodel,
         step_size=1e-1,
         batch_size=1,
-        num_iters=100,
+        num_iters=3,
         selected_index=np.arange(6890),
         use_collision=False,
         device=torch.device("cuda:0"),
@@ -132,6 +134,7 @@ class surface_EM_pt:
             body_opt_params, max_iter=20, lr=self.step_size, line_search_fn="strong_wolfe"
         )  #
         for i in range(self.num_iters):
+            print(i)
 
             def closure():
                 body_optimizer.zero_grad()
@@ -320,7 +323,7 @@ class surface_EM_depth:
         body_optimizer = torch.optim.LBFGS(
             body_opt_params, max_iter=20, lr=self.step_size, line_search_fn="strong_wolfe"
         )  #
-        for i in range(self.num_iters):
+        for i in tqdm(range(self.num_iters)):
 
             def closure():
                 body_optimizer.zero_grad()
