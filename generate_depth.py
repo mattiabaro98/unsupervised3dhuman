@@ -22,24 +22,6 @@ from src.utils import farthest_point_sample
 # # parsing argmument
 parser = argparse.ArgumentParser()
 parser.add_argument("--filename", type=str, help="PLY file for processing")
-# parser.add_argument("--batchSize", type=int, default=1, help="input batch size")
-# parser.add_argument("--gender", type=str, default="neutral", help="input male/female/neutral SMPL model")
-# parser.add_argument("--num_iters", type=int, default=50, help="num of register iters")
-# parser.add_argument("--gpu_ids", type=int, default=0, help="choose gpu ids")
-# parser.add_argument(
-#     "--restore_path", type=str, default="./pretrained/model_best_depth.pth", help="pretrained depth model path"
-# )
-# parser.add_argument("--smplmodel_folder", type=str, default="./smpl_models/", help="pretrained Depth model path")
-# parser.add_argument(
-#     "--SMPL_downsample", type=str, default="./smpl_models/SMPL_downsample_index.pkl", help="downsamople "
-# )
-# parser.add_argument("--dirs_save", type=str, default="./demo/demo_depth_save/", help="save directory")
-# parser.add_argument(
-#     "--filename",
-#     type=str,
-#     default="./demo/demo_depth/shortshort_flying_eagle.000075_depth.ply",
-#     help="file for processing",
-# )
 args = parser.parse_args()
 input_file = args.filename
 output_file = os.path.splitext(input_file)[0] + "_smpl_params.npz"
@@ -68,23 +50,18 @@ trans_back = torch.zeros(1, 3).to(device)
 loaded_index = joblib.load("./smpl_models/SMPL_downsample_index.pkl")
 selected_index = loaded_index["downsample_index"]
 
+
 depthEM = surface_EM_depth(
     smplxmodel=smplmodel,
     batch_size=1,
-    num_iters=10,
+    num_iters=3,
     selected_index=selected_index,
     device=device,
 )
 
-# os.makedirs(opt.dirs_save, exist_ok=True)
-
-# file_name = opt.filename
-# filename_pure = os.path.splitext(os.path.basename(file_name))[0]
-# print(filename_pure)
-
 
 # load mesh and sampling
-mesh = trimesh.load(input_file)  # shortshort_flying_eagle.000075_depth
+mesh = trimesh.load(input_file)
 point_o = mesh.vertices
 pts = torch.from_numpy(point_o).float()
 index = farthest_point_sample(pts.unsqueeze(0), npoint=2048).squeeze()
@@ -112,14 +89,16 @@ pred_cam_t[0, :] = pred_trans.unsqueeze(0).float()
 trans_back[0, :] = trans.unsqueeze(0).float()
 
 pred_pose[0, 16 * 3 : 18 * 3] = (
-    torch.Tensor([
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    ])
+    torch.Tensor(
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ]
+    )
     .unsqueeze(0)
     .float()
 )
@@ -134,24 +113,3 @@ np.savez(
     beta=new_opt_betas.detach().cpu().numpy().reshape(10),
     pose=new_opt_pose.detach().cpu().numpy().reshape(72),
 )
-
-# # # save the final results
-# output = smplmodel(
-#     betas=new_opt_betas,
-#     global_orient=new_opt_pose[:, :3],
-#     body_pose=new_opt_pose[:, 3:],
-#     transl=new_opt_cam_t + trans_back,
-#     return_verts=True,
-# )
-# mesh = trimesh.Trimesh(vertices=output.vertices.detach().cpu().numpy().squeeze(), faces=smplmodel.faces, process=False)
-# mesh.export(output_file)
-# # also copy the orig files here
-# shutil.copy(file_name, opt.dirs_save + os.path.basename(file_name))
-
-# joints3d = output.joints
-# param = {}
-# param["joints3d"] = joints3d.detach().cpu().numpy().squeeze()
-# param["shape"] = new_opt_betas.detach().cpu().numpy()
-# param["pose"] = new_opt_pose.detach().cpu().numpy()
-# param["trans"] = new_opt_cam_t.detach().cpu().numpy()
-# joblib.dump(param, opt.dirs_save + filename_pure + "_EM.pkl", compress=3)
