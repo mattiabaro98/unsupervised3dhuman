@@ -32,8 +32,12 @@ output_file = os.path.splitext(input_file)[0] + "_smpl_params.npz"
 # else:
 device = torch.device("cpu")
 
+arrays = np.load("./smpl_models/neutral_smpl_mean_params.npz")
+init_pose = arrays["pose"]
+init_beta = arrays["beta"]
+
 # --------pytorch model and optimizer is the key
-model = point_net_ssg(device=device).to(device).eval()
+model = point_net_ssg(device=device, init_pose=init_pose, init_shape=init_beta).to(device).eval()
 model.load_state_dict(torch.load("./pretrained/model_best_depth.pth", map_location=device))
 
 optimizer = optim.Adam(model.parameters())
@@ -54,7 +58,7 @@ selected_index = loaded_index["downsample_index"]
 depthEM = surface_EM_depth(
     smplxmodel=smplmodel,
     batch_size=1,
-    num_iters=3,
+    num_iters=10,
     selected_index=selected_index,
     device=device,
 )

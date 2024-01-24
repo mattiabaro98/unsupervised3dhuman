@@ -14,11 +14,13 @@ class point_net_ssg(nn.Module):
         trans_classes=3,
         gRT_classes=6,
         normal_channel=False,
-        smpl_mean_file="./smpl_models/neutral_smpl_mean_params.h5",
+        init_pose=None,
+        init_shape=None,
+        # smpl_mean_file="./smpl_models/neutral_smpl_mean_params.h5",
         device="cpu",
     ):
         super(point_net_ssg, self).__init__()
-        self.smpl_mean_file = smpl_mean_file
+        # self.smpl_mean_file = smpl_mean_file
         self.device = device
 
         in_channel = 6 if normal_channel else 3
@@ -55,9 +57,11 @@ class point_net_ssg(nn.Module):
         self.dectrans = nn.Linear(1024, trans_classes)
         self.decR = nn.Linear(1024, gRT_classes)
 
-        file = h5py.File(self.smpl_mean_file, "r")
-        init_pose = torch.from_numpy(file["pose"][:]).unsqueeze(0).float()
-        init_shape = torch.from_numpy(file["shape"][:]).unsqueeze(0).float()
+        # file = h5py.File(self.smpl_mean_file, "r")
+        # init_pose = torch.from_numpy(file["pose"][:]).unsqueeze(0).float()
+        # init_shape = torch.from_numpy(file["shape"][:]).unsqueeze(0).float()
+        init_pose = torch.from_numpy(init_pose).unsqueeze(0).float()
+        init_shape = torch.from_numpy(init_shape).unsqueeze(0).float()
         self.register_buffer("init_pose", init_pose)
         self.register_buffer("init_shape", init_shape)
 
