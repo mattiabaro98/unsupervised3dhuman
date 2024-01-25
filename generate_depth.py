@@ -27,10 +27,12 @@ input_file = args.filename
 output_file = os.path.splitext(input_file)[0] + "_smpl_params.npz"
 
 # # Load all Training settings
-# if torch.cuda.is_available():
-#     device = torch.device("cuda:" + str(opt.gpu_ids))
-# else:
-device = torch.device("cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+else:
+    device = torch.device("cpu")
+
+print(device)
 
 arrays = np.load("./smpl_models/neutral_smpl_mean_params.npz")
 init_pose = arrays["pose"]
