@@ -65,7 +65,7 @@ class point_net_ssg(nn.Module):
         self.register_buffer("init_pose", init_pose)
         self.register_buffer("init_shape", init_shape)
 
-    def forward(self, xyz, init_pose=None, init_shape=None, init_trans=None, n_iter=10):
+    def forward(self, xyz, init_pose=None, init_shape=None, init_trans=None, n_iter=3):
         batch_size, _, _ = xyz.shape
 
         if init_pose is None:
