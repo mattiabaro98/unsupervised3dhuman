@@ -1,15 +1,12 @@
 FROM nvcr.io/nvidia/pytorch:23.12-py3
 
-WORKDIR /home
-
 SHELL ["/bin/bash", "-c"]
 
-COPY ./requirements.txt /home
+WORKDIR /home
+RUN mkdir unsupervised3dhuman/
+COPY . /home/unsupervised3dhuman/
+RUN pip install -r ./unsupervised3dhuman/requirements.txt
 
-RUN pip install -r requirements.txt
-RUN git clone https://github.com/facebookresearch/pytorch3d \
-    && cd pytorch3d \
-    && pip install -e .
-
+ENTRYPOINT pip install git+https://github.com/facebookresearch/pytorch3d@v0.7.5 
 CMD ["bash"]
 

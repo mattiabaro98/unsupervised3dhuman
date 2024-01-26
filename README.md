@@ -5,5 +5,6 @@ docker build -t torch-docker .
 ```
 
 ```bash
-docker run --gpus all -it --rm -v .:/home torch-docker
+docker run --gpus all -it -v .:/home/unsupervised3dhuman torch-docker
+
 ```
