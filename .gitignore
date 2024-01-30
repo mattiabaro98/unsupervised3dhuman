@@ -3,3 +3,4 @@ lint_env/
 src/__pycache__/
 *.ply
 *.npz
+*.csv
