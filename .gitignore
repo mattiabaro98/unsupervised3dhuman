@@ -1,6 +1,7 @@
 env/
 lint_env/
-src/__pycache__/
+SMPLfitter/__pycache__/
+SMPLfitter/usr/__pycache__/
 *.ply
 *.npz
 *.csv

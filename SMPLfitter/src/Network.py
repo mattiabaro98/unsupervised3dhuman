@@ -1,4 +1,3 @@
-# import h5py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,11 +15,9 @@ class point_net_ssg(nn.Module):
         normal_channel=False,
         init_pose=None,
         init_shape=None,
-        # smpl_mean_file="./smpl_models/neutral_smpl_mean_params.h5",
         device="cpu",
     ):
         super(point_net_ssg, self).__init__()
-        # self.smpl_mean_file = smpl_mean_file
         self.device = device
 
         in_channel = 6 if normal_channel else 3
@@ -57,23 +54,16 @@ class point_net_ssg(nn.Module):
         self.dectrans = nn.Linear(1024, trans_classes)
         self.decR = nn.Linear(1024, gRT_classes)
 
-        # file = h5py.File(self.smpl_mean_file, "r")
-        # init_pose = torch.from_numpy(file["pose"][:]).unsqueeze(0).float()
-        # init_shape = torch.from_numpy(file["shape"][:]).unsqueeze(0).float()
         init_pose = torch.from_numpy(init_pose).unsqueeze(0).float()
         init_shape = torch.from_numpy(init_shape).unsqueeze(0).float()
         self.register_buffer("init_pose", init_pose)
         self.register_buffer("init_shape", init_shape)
 
-    def forward(self, xyz, init_pose=None, init_shape=None, init_trans=None, n_iter=3):
+    def forward(self, xyz, n_iter=3):
         batch_size, _, _ = xyz.shape
-
-        if init_pose is None:
-            init_pose = self.init_pose.expand(batch_size, -1)[:, 3:]
-        if init_shape is None:
-            init_shape = self.init_shape.expand(batch_size, -1)
-        if init_trans is None:
-            init_trans = torch.zeros([batch_size, 3]).to(self.device)
+        init_pose = self.init_pose.expand(batch_size, -1)[:, 3:]
+        init_shape = self.init_shape.expand(batch_size, -1)
+        init_trans = torch.zeros([batch_size, 3]).to(self.device)
 
         # xf, trans, trans_feat = self.feat(xyz)
         norm = None
