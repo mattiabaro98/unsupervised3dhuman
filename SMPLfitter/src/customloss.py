@@ -1,7 +1,7 @@
 import torch
 from pytorch3d.structures import Meshes, Pointclouds
 
-from src.utils import chamfer_distance_sep, point_mesh_face_distance_sep
+from SMPLfitter.src.utils import chamfer_distance_sep, point_mesh_face_distance_sep
 
 
 # Guassian

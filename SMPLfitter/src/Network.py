@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.utils import PointNetFeaturePropagation, PointNetSetAbstraction
+from SMPLfitter.src.utils import PointNetFeaturePropagation, PointNetSetAbstraction
 
 
 class point_net_ssg(nn.Module):
