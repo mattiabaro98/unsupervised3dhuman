@@ -5,6 +5,7 @@ from tqdm import tqdm
 from SMPLfitter.src.customloss import body_fitting_loss_em
 from SMPLfitter.src.prior import MaxMixturePrior
 
+
 #  surface EM
 class surface_EM_depth:
     """Implementation of SMPLify, use surface."""

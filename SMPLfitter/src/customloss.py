@@ -25,13 +25,16 @@ def angle_prior(pose):
         ** 2
     )
 
+
 import csv
+
 
 # Function to write a single row to a CSV file
 def write_row_to_csv(file_path, row_data):
-    with open(file_path, mode='a', newline='') as csv_file:
+    with open(file_path, mode="a", newline="") as csv_file:
         csv_writer = csv.writer(csv_file)
         csv_writer.writerow(row_data)
+
 
 # ----- use body fitting with index EM ----------
 def body_fitting_loss_em(
@@ -103,16 +106,18 @@ def body_fitting_loss_em(
         + point2mesh_loss
     )
 
-    partial = [correspond_loss.item(),
+    partial = [
+        correspond_loss.item(),
         pose_prior_loss.item(),
         angle_prior_loss.item(),
         shape_prior_loss.item(),
         betas_preserve_loss.item(),
         pose_preserve_loss.item(),
         chamfer_loss.item(),
-        point2mesh_loss.item()]
+        point2mesh_loss.item(),
+    ]
 
-    file_path = 'loss.csv'
+    file_path = "loss.csv"
     write_row_to_csv(file_path, partial)
 
     return total_loss.sum()

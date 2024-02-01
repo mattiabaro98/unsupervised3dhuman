@@ -11,6 +11,7 @@ from torch import nn
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 
+
 # -------------------------------------------------------------------------------------------------------------------------
 def farthest_point_sample(xyz, npoint):
     """
@@ -37,6 +38,7 @@ def farthest_point_sample(xyz, npoint):
         farthest = torch.max(distance, -1)[1]
     return centroids
 
+
 # -------------------------------------------------------------------------------------------------------------------------
 def square_distance(src, dst):
     """
@@ -61,6 +63,7 @@ def square_distance(src, dst):
     dist += torch.sum(dst**2, -1).view(B, 1, M)
     return dist
 
+
 def query_ball_point(radius, nsample, xyz, new_xyz):
     """
     Input:
@@ -82,6 +85,7 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     mask = group_idx == N
     group_idx[mask] = group_first[mask]
     return group_idx
+
 
 def index_points(points, idx):
     """
@@ -261,7 +265,9 @@ class PointNetFeaturePropagation(nn.Module):
             new_points = F.relu(bn(conv(new_points)))
         return new_points
 
+
 # -------------------------------------------------------------------------------------------------------------------------
+
 
 def knn_point(nsample, xyz, new_xyz):
     """
@@ -275,6 +281,7 @@ def knn_point(nsample, xyz, new_xyz):
     sqrdists = square_distance(new_xyz, xyz)
     _, group_idx = torch.topk(sqrdists, nsample, dim=-1, largest=False, sorted=False)
     return group_idx
+
 
 # PointFaceDistance
 class _PointFaceDistance(Function):

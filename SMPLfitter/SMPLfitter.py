@@ -1,8 +1,5 @@
 from __future__ import division, print_function
 
-import argparse
-import os
-
 import joblib
 import numpy as np
 import smplx
@@ -39,13 +36,12 @@ class SMPLfitter:
         self.smpl_params_path = "./SMPLfitter/smpl_models/"
         SMPL_downsample_index_path = "./SMPLfitter/smpl_models/SMPL_downsample_index.pkl"
         neutral_smpl_mean_params_path = "./SMPLfitter/smpl_models/neutral_smpl_mean_params.npz"
-        
+
         # SMPL gender
         if smpl_gender == "male" or smpl_gender == "female":
             self.smpl_gender = smpl_gender
         else:
-            print("Wrong gender parameter, \"male\" or \"female\" accepted.")
-
+            print('Wrong gender parameter, "male" or "female" accepted.')
 
         # Set device
         if torch.cuda.is_available():
@@ -63,30 +59,37 @@ class SMPLfitter:
         self.selected_index = joblib.load(SMPL_downsample_index_path)["downsample_index"]
 
         # Initialize SMPL model
-        self.smplmodel = smplx.create(self.smpl_params_path, model_type="smpl", gender=self.smpl_gender, ext="pkl").to(self.device)
+        self.smplmodel = smplx.create(self.smpl_params_path, model_type="smpl", gender=self.smpl_gender, ext="pkl").to(
+            self.device
+        )
 
     # def save_pose_shape():
 
     def _save_smpl_ply(self, betas, pose, cam_t, trans_back, filename):
 
-        #save the final results
-        output = self.smplmodel(betas=betas, global_orient=pose[:, :3], body_pose=pose[:, 3:],
-                        transl=cam_t+trans_back, return_verts=True)
-        mesh = trimesh.Trimesh(vertices=output.vertices.detach().cpu().numpy().squeeze(), faces=self.smplmodel.faces, process=False)
+        # save the final results
+        output = self.smplmodel(
+            betas=betas, global_orient=pose[:, :3], body_pose=pose[:, 3:], transl=cam_t + trans_back, return_verts=True
+        )
+        mesh = trimesh.Trimesh(
+            vertices=output.vertices.detach().cpu().numpy().squeeze(), faces=self.smplmodel.faces, process=False
+        )
         mesh.export(filename)
 
-    def fit(self):     
+    def fit(self):
         # ---------- Load and preprocess point cloud ----------
         # Load pointcloud
         mesh = trimesh.load(self.input_file)
         points = mesh.vertices
         points = torch.from_numpy(points).float()
-        print("Loaded point cloud with %s points"%points.shape[0])
-        
+        print("Loaded point cloud with %s points" % points.shape[0])
+
         # Sample point cloud to reduce number of points
-        index = farthest_point_sample(points.unsqueeze(0), npoint=2048).squeeze() # Return sampled indexes from farthest_point_sample
-        points = points[index] # Select sampled indexes
-        print("Sampled point cloud with %s points"%points.shape[0])
+        index = farthest_point_sample(
+            points.unsqueeze(0), npoint=2048
+        ).squeeze()  # Return sampled indexes from farthest_point_sample
+        points = points[index]  # Select sampled indexes
+        print("Sampled point cloud with %s points" % points.shape[0])
 
         # mesh = trimesh.Trimesh()
         # mesh.vertices = points
@@ -103,7 +106,11 @@ class SMPLfitter:
 
         # ---------- PointNet Single Scale Grouping Model ----------
         # Initialize model
-        model = point_net_ssg(device=self.device, init_pose=self.init_pose, init_shape=self.init_beta).to(self.device).eval()
+        model = (
+            point_net_ssg(device=self.device, init_pose=self.init_pose, init_shape=self.init_beta)
+            .to(self.device)
+            .eval()
+        )
         model.load_state_dict(torch.load(self.point_net_ssg_params_path, map_location=self.device))
         optimizer = optim.Adam(model.parameters())
 
@@ -116,12 +123,10 @@ class SMPLfitter:
         pred_cam_t = torch.zeros(1, 3).to(self.device)
         trans_back = torch.zeros(1, 3).to(self.device)
 
-        
-
         pred_R6D_3D = quaternion_to_axis_angle(matrix_to_quaternion((rotation_6d_to_matrix(pred_R6D))))
         pred_pose[0, 3:] = pred_pose_body.unsqueeze(0).float()
         pred_pose[0, :3] = pred_R6D_3D.unsqueeze(0).float()
-        pred_pose[0, 16 * 3 : 18 * 3] = (torch.Tensor([0, 0, 0, 0, 0, 0]).unsqueeze(0).float())
+        pred_pose[0, 16 * 3 : 18 * 3] = torch.Tensor([0, 0, 0, 0, 0, 0]).unsqueeze(0).float()
 
         pred_cam_t[0, :] = pred_trans.unsqueeze(0).float()
 
@@ -134,10 +139,9 @@ class SMPLfitter:
         #     beta=pred_betas.detach().cpu().numpy().reshape(10),
         #     pose=pred_pose.detach().cpu().numpy().reshape(72),
         # )
-        
 
-        #---------- Fit SMPL model ----------
-        
+        # ---------- Fit SMPL model ----------
+
         depthEM = surface_EM_depth(
             smplxmodel=self.smplmodel,
             batch_size=1,
