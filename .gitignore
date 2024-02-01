@@ -5,3 +5,4 @@ SMPLfitter/usr/__pycache__/
 *.ply
 *.npz
 *.csv
+*.pyc

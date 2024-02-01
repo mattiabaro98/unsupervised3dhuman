@@ -57,7 +57,6 @@ class SMPLfitter:
             self.device
         )
 
-
     def load_pc(self, input_file):
         # ---------- Load and preprocess point cloud ----------
         # Load pointcloud
@@ -86,12 +85,12 @@ class SMPLfitter:
 
         return points, trans
 
-    def pose_initializer(self, points):
+    def pose_initializer(self, points, trans):
 
         # Prepare transposed points, pass points and transposed points to device
         points_transposed = torch.transpose(points, 1, 0)
         points_transposed = points_transposed.unsqueeze(0).to(self.device)
-        
+
         # ---------- PointNet Single Scale Grouping Model ----------
         # Initialize model
         model = (
@@ -109,24 +108,22 @@ class SMPLfitter:
         pred_pose = torch.zeros(1, 72).to(self.device)
         pred_betas = torch.zeros(1, 10).to(self.device)
         pred_cam_t = torch.zeros(1, 3).to(self.device)
+        trans_back = torch.zeros(1, 3).to(self.device)
 
         pred_R6D_3D = quaternion_to_axis_angle(matrix_to_quaternion((rotation_6d_to_matrix(pred_R6D))))
         pred_pose[0, 3:] = pred_pose_body.unsqueeze(0).float()
         pred_pose[0, :3] = pred_R6D_3D.unsqueeze(0).float()
         pred_pose[0, 16 * 3 : 18 * 3] = torch.Tensor([0, 0, 0, 0, 0, 0]).unsqueeze(0).float()
         pred_cam_t[0, :] = pred_trans.unsqueeze(0).float()
+        trans_back[0, :] = trans.unsqueeze(0).float()
 
-        return pred_pose, pred_betas, pred_cam_t
-
-
-
+        return pred_pose, pred_betas, pred_cam_t, trans_back
 
     def smpl_fit(self, points, pred_pose, pred_betas, pred_cam_t):
 
         # ---------- Fit SMPL model ----------
 
         points = points.unsqueeze(0).to(self.device)
-
 
         depthEM = surface_EM_depth(
             smplxmodel=self.smplmodel,
@@ -142,4 +139,13 @@ class SMPLfitter:
 
         return new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t
 
+    def save_smpl_ply(self, betas, pose, cam_t, trans_back, filename):
 
+        # save the final results
+        output = self.smplmodel(
+            betas=betas, global_orient=pose[:, :3], body_pose=pose[:, 3:], transl=cam_t + trans_back, return_verts=True
+        )
+        mesh = trimesh.Trimesh(
+            vertices=output.vertices.detach().cpu().numpy().squeeze(), faces=self.smplmodel.faces, process=False
+        )
+        mesh.export(filename)

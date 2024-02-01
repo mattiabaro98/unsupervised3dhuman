@@ -1,6 +1,6 @@
 import argparse
-import numpy as np
 
+import numpy as np
 import open3d as o3d
 
 parser = argparse.ArgumentParser(description="Read the contents of a file.")
