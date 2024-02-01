@@ -83,6 +83,8 @@ class SMPLfitter:
         trans = torch.mean(points, dim=0, keepdim=True)
         points = torch.sub(points, trans)
 
+        print("Point cloud centered")
+
         return points, trans
 
     def pose_initializer(self, points, trans):
@@ -117,6 +119,8 @@ class SMPLfitter:
         pred_cam_t[0, :] = pred_trans.unsqueeze(0).float()
         trans_back[0, :] = trans.unsqueeze(0).float()
 
+        print("Pose initialized")
+
         return pred_pose, pred_betas, pred_cam_t, trans_back
 
     def smpl_fit(self, points, pred_pose, pred_betas, pred_cam_t):
@@ -136,6 +140,8 @@ class SMPLfitter:
         new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t = depthEM(
             pred_pose.detach(), pred_betas.detach(), pred_cam_t.detach(), points
         )
+
+        print("SMPL parameters fitted")
 
         return new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t
 

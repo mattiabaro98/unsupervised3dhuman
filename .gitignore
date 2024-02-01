@@ -2,7 +2,7 @@ env/
 lint_env/
 SMPLfitter/__pycache__/
 SMPLfitter/usr/__pycache__/
-*.ply
-*.npz
+results/*.ply
+results/*.npz
 *.csv
 *.pyc

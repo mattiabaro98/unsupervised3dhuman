@@ -1,9 +1,9 @@
 import numpy as np
 import open3d as o3d
 
-file1 = "./00003200rot.ply"
-# file2 = "./sampled_point_cloud.ply"
-file2 = "./end.ply"
+file1 = "./examples/ex3rot.ply"
+# file2 = "./results/ex3rot_initialized.ply"
+file2 = "./results/ex3rot_predicted.ply"
 
 
 pcd1 = o3d.io.read_point_cloud(file1)
