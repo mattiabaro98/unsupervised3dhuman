@@ -87,6 +87,29 @@ class SMPLfitter:
 
         return points, trans
 
+    def scale_pc(self, points, alpha):
+
+        # Scale point cloud
+        points = torch.mul(points, alpha)
+
+        print("Point cloud scaled")
+
+        return points
+
+    def pose_default(self, trans):
+
+        pred_pose = torch.zeros(1, 72).to(self.device)
+        pred_betas = torch.zeros(1, 10).to(self.device)
+        pred_cam_t = torch.zeros(1, 3).to(self.device)
+        trans_back = torch.zeros(1, 3).to(self.device)
+
+        # pred_pose[0, :] = torch.from_numpy(self.init_pose).unsqueeze(0).float()
+        # pred_betas[0, :] = torch.from_numpy(self.init_beta).unsqueeze(0).float()
+        trans_back[0, :] = trans.unsqueeze(0).float()
+
+        return pred_pose, pred_betas, pred_cam_t, trans_back
+
+
     def pose_initializer(self, points, trans):
 
         # Prepare transposed points, pass points and transposed points to device
