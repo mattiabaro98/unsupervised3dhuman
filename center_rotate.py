@@ -10,8 +10,11 @@ import open3d as o3d
 # ply_path = "./examples/ex3.ply"
 # output_ply_path = "./examples/ex3rot.ply"
 
-ply_path = "./examples/ex4.ply"
-output_ply_path = "./examples/ex4rot.ply"
+# ply_path = "./examples/ex4.ply"
+# output_ply_path = "./examples/ex4rot.ply"
+
+ply_path = "./examples/ex5.ply"
+output_ply_path = "./examples/ex5rot.ply"
 
 pcd = o3d.io.read_point_cloud(ply_path)
 

@@ -1,7 +1,7 @@
 import numpy as np
 import open3d as o3d
 
-n = 4
+n = 5
 # file1 = f"./examples/ex{n}rot.ply"
 file1 = f"./results/ex{n}rot_scaled.ply"
 # file2 = f"./results/ex{n}rot_initialized.ply"
