@@ -1,8 +1,9 @@
 import os
 
-import trimesh
-
 from SMPLfitter import SMPLfitter
+
+# import trimesh
+
 
 file_pc = "ex5rot.ply"
 name, _ = os.path.splitext(file_pc)
