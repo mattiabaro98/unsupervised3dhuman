@@ -1,3 +1,5 @@
+import csv
+
 import torch
 from pytorch3d.structures import Meshes, Pointclouds
 
@@ -24,9 +26,6 @@ def angle_prior(pose):
         torch.exp(pose[:, [55 - 3, 58 - 3, 12 - 3, 15 - 3]] * torch.tensor([1.0, -1.0, -1, -1.0], device=pose.device))
         ** 2
     )
-
-
-import csv
 
 
 # Function to write a single row to a CSV file

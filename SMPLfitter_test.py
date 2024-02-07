@@ -1,26 +1,25 @@
 import os
 
-import numpy as np
+import torch
 import trimesh
-import torch 
+
 from SMPLfitter import SMPLfitter
 
-file_pc = "ex5rot.ply"
+file_pc = "ex7rot.ply"
 name, _ = os.path.splitext(file_pc)
 input_file = "./examples/" + file_pc
 
 # ex3
-# alpha = 1.4 
+# alpha = 1.4
 # cam_t = [0, 0.3, 0]
 
 # ex4
 # alpha = 1.15
 # cam_t = [0, 0.1, 0]
 
-#ex5
+# ex5
 alpha = 1.15
 cam_t = [0, 0.3, 0]
-
 
 
 fitter = SMPLfitter.SMPLfitter(smpl_gender="male")
@@ -32,9 +31,7 @@ centered_points, trans = fitter.center_pc(sampled_points)
 scaled_points = fitter.scale_pc(centered_points, alpha)
 
 pred_pose, pred_betas, pred_cam_t, trans_back = fitter.pose_default(trans)
-# pred_pose, pred_betas, pred_cam_t, trans_back = fitter.pose_initializer(centered_points, trans)
-# pred_pose[:, :3] =  torch.Tensor([0, 0, 0]).unsqueeze(0).float()
-pred_cam_t[:, :] =  torch.Tensor(cam_t).unsqueeze(0).float()
+pred_cam_t[:, :] = torch.Tensor(cam_t).unsqueeze(0).float()
 
 new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t = fitter.smpl_fit(
     scaled_points, pred_pose, pred_betas, pred_cam_t

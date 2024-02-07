@@ -1,18 +1,10 @@
 from __future__ import division, print_function
 
 import joblib
-import numpy as np
 import smplx
 import torch
-import torch.optim as optim
 import trimesh
-from pytorch3d.transforms import (
-    matrix_to_quaternion,
-    quaternion_to_axis_angle,
-    rotation_6d_to_matrix,
-)
 
-from SMPLfitter.src.Network import point_net_ssg
 from SMPLfitter.src.surfaceem import surface_EM_depth
 from SMPLfitter.src.utils import farthest_point_sample
 
@@ -26,10 +18,8 @@ class SMPLfitter:
     ):
 
         # Assets path
-        self.point_net_ssg_params_path = "./SMPLfitter/pretrained/model_best_depth.pth"
         self.smpl_params_path = "./SMPLfitter/smpl_models/"
         SMPL_downsample_index_path = "./SMPLfitter/smpl_models/SMPL_downsample_index.pkl"
-        neutral_smpl_mean_params_path = "./SMPLfitter/smpl_models/neutral_smpl_mean_params.npz"
 
         # SMPL gender
         if smpl_gender == "male" or smpl_gender == "female":
@@ -43,11 +33,6 @@ class SMPLfitter:
         else:
             self.device = torch.device("cpu")
         print("Selected device:", self.device)
-
-        # Initial pose parameters
-        arrays = np.load(neutral_smpl_mean_params_path)
-        self.init_pose = arrays["pose"]
-        self.init_beta = arrays["beta"]
 
         # Downsample index
         self.selected_index = joblib.load(SMPL_downsample_index_path)["downsample_index"]
@@ -103,43 +88,6 @@ class SMPLfitter:
         pred_cam_t = torch.zeros(1, 3).to(self.device)
         trans_back = torch.zeros(1, 3).to(self.device)
 
-        # pred_pose[0, :] = torch.from_numpy(self.init_pose).unsqueeze(0).float()
-        # pred_betas[0, :] = torch.from_numpy(self.init_beta).unsqueeze(0).float()
-        trans_back[0, :] = trans.unsqueeze(0).float()
-
-        return pred_pose, pred_betas, pred_cam_t, trans_back
-
-
-    def pose_initializer(self, points, trans):
-
-        # Prepare transposed points, pass points and transposed points to device
-        points_transposed = torch.transpose(points, 1, 0)
-        points_transposed = points_transposed.unsqueeze(0).to(self.device)
-
-        # ---------- PointNet Single Scale Grouping Model ----------
-        # Initialize model
-        model = (
-            point_net_ssg(device=self.device, init_pose=self.init_pose, init_shape=self.init_beta)
-            .to(self.device)
-            .eval()
-        )
-        model.load_state_dict(torch.load(self.point_net_ssg_params_path, map_location=self.device))
-        optimizer = optim.Adam(model.parameters())
-
-        # Inference
-        with torch.no_grad():
-            pred_shape, pred_pose_body, pred_trans, pred_R6D = model(points_transposed)
-
-        pred_pose = torch.zeros(1, 72).to(self.device)
-        pred_betas = torch.zeros(1, 10).to(self.device)
-        pred_cam_t = torch.zeros(1, 3).to(self.device)
-        trans_back = torch.zeros(1, 3).to(self.device)
-
-        pred_R6D_3D = quaternion_to_axis_angle(matrix_to_quaternion((rotation_6d_to_matrix(pred_R6D))))
-        pred_pose[0, 3:] = pred_pose_body.unsqueeze(0).float()
-        pred_pose[0, :3] = pred_R6D_3D.unsqueeze(0).float()
-        pred_pose[0, 16 * 3 : 18 * 3] = torch.Tensor([0, 0, 0, 0, 0, 0]).unsqueeze(0).float()
-        pred_cam_t[0, :] = pred_trans.unsqueeze(0).float()
         trans_back[0, :] = trans.unsqueeze(0).float()
 
         print("Pose initialized")
