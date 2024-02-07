@@ -84,7 +84,7 @@ class surface_EM_depth:
         return probInput, modelInd, meshInd
 
     # ---- get the man function hrere
-    def __call__(self, init_pose, init_betas, init_cam_t, meshVerts):
+    def __call__(self, init_pose, init_betas, init_cam_t, init_alpha, meshVerts):
         """Perform body fitting.
         Input:
             init_pose: SMPL pose
@@ -115,12 +115,15 @@ class surface_EM_depth:
         preserve_betas = init_betas.detach().clone()
         preserve_pose = init_pose[:, 3:].detach().clone()
 
+        alpha = init_alpha.detach().clone()
+
         # -------- Step : Optimize use surface points ---------
         betas.requires_grad = True
         body_pose.requires_grad = True
         global_orient.requires_grad = True
         camera_translation.requires_grad = True
-        body_opt_params = [body_pose, global_orient, betas, camera_translation]  #
+        alpha.requires_grad = True
+        body_opt_params = [body_pose, global_orient, betas, camera_translation, alpha]  #
 
         # optimize the body_pose
         body_optimizer = torch.optim.LBFGS(
@@ -139,6 +142,7 @@ class surface_EM_depth:
                 )
 
                 modelVerts = smpl_output.vertices[:, self.selected_index]
+                modelVerts = torch.mul(modelVerts, alpha)
                 # calculate the probInput
                 probInput, modelInd, meshInd = self.prob_cal(
                     modelVerts, meshVerts, sigma=(0.1**2) * (self.num_iters - i + 1) / self.num_iters, mu=self.mu
@@ -192,5 +196,6 @@ class surface_EM_depth:
         joints = smpl_output.joints.detach()
         pose = torch.cat([global_orient, body_pose], dim=-1).detach()
         betas = betas.detach()
+        alpha = alpha.detach()
 
-        return vertices, joints, pose, betas, camera_translation
+        return vertices, joints, pose, betas, camera_translation, alpha

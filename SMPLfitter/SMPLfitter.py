@@ -72,29 +72,21 @@ class SMPLfitter:
 
         return points, trans
 
-    def scale_pc(self, points, alpha):
-
-        # Scale point cloud
-        points = torch.mul(points, alpha)
-
-        print("Point cloud scaled")
-
-        return points
-
     def pose_default(self, trans):
 
-        pred_pose = torch.zeros(1, 72).to(self.device)
-        pred_betas = torch.zeros(1, 10).to(self.device)
-        pred_cam_t = torch.zeros(1, 3).to(self.device)
+        init_pose = torch.zeros(1, 72).to(self.device)
+        init_betas = torch.zeros(1, 10).to(self.device)
+        init_cam_t = torch.zeros(1, 3).to(self.device)
         trans_back = torch.zeros(1, 3).to(self.device)
+        init_alpha = torch.tensor(1, dtype=torch.float).to(self.device)
 
         trans_back[0, :] = trans.unsqueeze(0).float()
 
         print("Pose initialized")
 
-        return pred_pose, pred_betas, pred_cam_t, trans_back
+        return init_pose, init_betas, init_cam_t, trans_back, init_alpha
 
-    def smpl_fit(self, points, pred_pose, pred_betas, pred_cam_t):
+    def smpl_fit(self, points, init_pose, init_betas, init_cam_t, init_alpha):
 
         # ---------- Fit SMPL model ----------
 
@@ -108,21 +100,20 @@ class SMPLfitter:
             device=self.device,
         )
 
-        new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t = depthEM(
-            pred_pose.detach(), pred_betas.detach(), pred_cam_t.detach(), points
+        pred_vertices, pred_joints, pred_pose, pred_betas, pred_cam_t, pred_alpha = depthEM(
+            init_pose.detach(), init_betas.detach(), init_cam_t.detach(), init_alpha.detach(), points
         )
 
         print("SMPL parameters fitted")
 
-        return new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t
+        return pred_pose, pred_betas, pred_cam_t, pred_alpha
 
-    def save_smpl_ply(self, betas, pose, cam_t, trans_back, filename):
+    def save_smpl_ply(self, betas, pose, cam_t, trans_back, alpha, filename):
 
         # save the final results
         output = self.smplmodel(
             betas=betas, global_orient=pose[:, :3], body_pose=pose[:, 3:], transl=cam_t + trans_back, return_verts=True
         )
-        mesh = trimesh.Trimesh(
-            vertices=output.vertices.detach().cpu().numpy().squeeze(), faces=self.smplmodel.faces, process=False
-        )
+        outputVerts = torch.mul(output.vertices, alpha).detach().cpu().numpy().squeeze()
+        mesh = trimesh.Trimesh(vertices=outputVerts, faces=self.smplmodel.faces, process=False)
         mesh.export(filename)
