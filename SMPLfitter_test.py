@@ -5,7 +5,7 @@ import trimesh
 import torch 
 from SMPLfitter import SMPLfitter
 
-file_pc = "ex4rot.ply"
+file_pc = "ex5rot.ply"
 name, _ = os.path.splitext(file_pc)
 input_file = "./examples/" + file_pc
 
@@ -14,8 +14,13 @@ input_file = "./examples/" + file_pc
 # cam_t = [0, 0.3, 0]
 
 # ex4
+# alpha = 1.15
+# cam_t = [0, 0.1, 0]
+
+#ex5
 alpha = 1.15
-cam_t = [0, 0.1, 0]
+cam_t = [0, 0.3, 0]
+
 
 
 fitter = SMPLfitter.SMPLfitter(smpl_gender="male")
@@ -36,11 +41,6 @@ new_opt_vertices, new_opt_joints, new_opt_pose, new_opt_betas, new_opt_cam_t = f
 )
 
 # Store results
-
-# mesh = trimesh.Trimesh()
-# mesh.vertices = centered_points + trans
-# mesh.export("./results/%s_sampled.ply" % name)
-
 mesh = trimesh.Trimesh()
 mesh.vertices = scaled_points + trans
 mesh.export("./results/%s_scaled.ply" % name)

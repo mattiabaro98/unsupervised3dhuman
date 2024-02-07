@@ -155,7 +155,7 @@ class SMPLfitter:
         depthEM = surface_EM_depth(
             smplxmodel=self.smplmodel,
             batch_size=1,
-            num_iters=10,
+            num_iters=100,
             selected_index=self.selected_index,
             device=self.device,
         )
