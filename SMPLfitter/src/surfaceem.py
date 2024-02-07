@@ -182,20 +182,9 @@ class surface_EM_depth:
 
             body_optimizer.step(closure)
 
-        # Get final loss value
-        with torch.no_grad():
-            smpl_output = self.smpl(
-                global_orient=global_orient,
-                body_pose=body_pose,
-                betas=betas,
-                transl=camera_translation,
-                return_full_pose=True,
-            )
-
-        vertices = smpl_output.vertices.detach()
-        joints = smpl_output.joints.detach()
         pose = torch.cat([global_orient, body_pose], dim=-1).detach()
         betas = betas.detach()
+        camera_translation = camera_translation.detach()
         alpha = alpha.detach()
 
-        return vertices, joints, pose, betas, camera_translation, alpha
+        return pose, betas, camera_translation, alpha

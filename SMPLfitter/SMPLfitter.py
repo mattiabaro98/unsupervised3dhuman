@@ -100,7 +100,7 @@ class SMPLfitter:
             device=self.device,
         )
 
-        pred_vertices, pred_joints, pred_pose, pred_betas, pred_cam_t, pred_alpha = depthEM(
+        pred_pose, pred_betas, pred_cam_t, pred_alpha = depthEM(
             init_pose.detach(), init_betas.detach(), init_cam_t.detach(), init_alpha.detach(), points
         )
 
