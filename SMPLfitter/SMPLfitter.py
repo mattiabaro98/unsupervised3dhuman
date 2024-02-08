@@ -17,16 +17,6 @@ class SMPLfitter:
         smpl_gender="male",
     ):
 
-        # Assets path
-        self.smpl_params_path = "./SMPLfitter/smpl_models/"
-        SMPL_downsample_index_path = "./SMPLfitter/smpl_models/SMPL_downsample_index.pkl"
-
-        # SMPL gender
-        if smpl_gender == "male" or smpl_gender == "female":
-            self.smpl_gender = smpl_gender
-        else:
-            print('Wrong gender parameter, "male" or "female" accepted.')
-
         # Set device
         if torch.cuda.is_available():
             self.device = torch.device("cuda:0")
@@ -34,64 +24,92 @@ class SMPLfitter:
             self.device = torch.device("cpu")
         print("Selected device:", self.device)
 
-        # Downsample index
-        self.selected_index = joblib.load(SMPL_downsample_index_path)["downsample_index"]
+        # SMPL gender
+        if smpl_gender == "male" or smpl_gender == "female":
+            self.smpl_gender = smpl_gender
+        else:
+            print('Wrong gender parameter, "male" or "female" accepted.')
 
         # Initialize SMPL model
+        self.smpl_params_path = "./SMPLfitter/smpl_models/"
         self.smplmodel = smplx.create(self.smpl_params_path, model_type="smpl", gender=self.smpl_gender, ext="pkl").to(
             self.device
         )
 
-    def load_pc(self, input_file):
-        # ---------- Load and preprocess point cloud ----------
-        # Load pointcloud
+        # Downsample index
+        SMPL_downsample_index_path = "./SMPLfitter/smpl_models/SMPL_downsample_index.pkl"
+        self.selected_index = joblib.load(SMPL_downsample_index_path)["downsample_index"]
+
+    def load_pc(self, input_file: str) -> torch.tensor:
+        """Load pointcloud
+        Input:
+        Output:
+        """
+
         mesh = trimesh.load(input_file)
         points = mesh.vertices
         points = torch.from_numpy(points).float()
-        print("Loaded point cloud with %s points" % points.shape[0])
+        print(f"Loaded {input_file} point cloud with {points.shape[0]} points")
 
         return points
 
-    def sample_pc(self, points):
+    def sample_pc(self, points: torch.tensor) -> torch.tensor:
+        """Sample point cloud to reduce number of points
+        Input:
+        Output:
+        """
 
-        # Sample point cloud to reduce number of points
         index = farthest_point_sample(
             points.unsqueeze(0), npoint=2048
         ).squeeze()  # Return sampled indexes from farthest_point_sample
         sampled_points = points[index]  # Select sampled indexes
+
         print("Sampled point cloud with %s points" % sampled_points.shape[0])
         return sampled_points
 
-    def center_pc(self, points):
+    def center_pc(self, points: torch.tensor) -> (torch.tensor, torch.tensor):
+        """Center point cloud
+        Input:
+        Output:
+        """
 
-        # Center point cloud
-        trans = torch.mean(points, dim=0, keepdim=True)
-        points = torch.sub(points, trans)
+        center_trans = torch.mean(points, dim=0, keepdim=True)
+        points = torch.sub(points, center_trans)
 
         print("Point cloud centered")
+        return points, center_trans
 
-        return points, trans
-
-    def pose_default(self, trans):
+    def initialize_params(
+        self, center_trans: torch.tensor
+    ) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
+        """Initilize Parameters
+        Input:
+        Output:
+        """
 
         init_pose = torch.zeros(1, 72).to(self.device)
         init_betas = torch.zeros(1, 10).to(self.device)
-        init_cam_t = torch.zeros(1, 3).to(self.device)
-        trans_back = torch.zeros(1, 3).to(self.device)
-        init_alpha = torch.tensor(1, dtype=torch.float).to(self.device)
+        init_scale = torch.tensor(1, dtype=torch.float32).to(self.device)
+        init_cam_trans = torch.zeros(1, 3).to(self.device)
+        center_trans = center_trans.to(self.device)
 
-        trans_back[0, :] = trans.unsqueeze(0).float()
+        print("Parameters initialized initialized")
+        return init_pose, init_betas, init_scale, init_cam_trans, center_trans
 
-        print("Pose initialized")
-
-        return init_pose, init_betas, init_cam_t, trans_back, init_alpha
-
-    def smpl_fit(self, points, init_pose, init_betas, init_cam_t, init_alpha):
-
-        # ---------- Fit SMPL model ----------
+    def smpl_fit(
+        self,
+        points: torch.tensor,
+        init_pose: torch.tensor,
+        init_betas: torch.tensor,
+        init_scale: torch.tensor,
+        init_cam_trans: torch.tensor,
+    ) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
+        """Fit SMPL model
+        Input:
+        Output:
+        """
 
         points = points.unsqueeze(0).to(self.device)
-
         depthEM = surface_EM_depth(
             smplxmodel=self.smplmodel,
             batch_size=1,
@@ -100,20 +118,37 @@ class SMPLfitter:
             device=self.device,
         )
 
-        pred_pose, pred_betas, pred_cam_t, pred_alpha = depthEM(
-            init_pose.detach(), init_betas.detach(), init_cam_t.detach(), init_alpha.detach(), points
+        pred_pose, pred_betas, pred_scale, pred_cam_trans = depthEM(
+            init_pose.detach(), init_betas.detach(), init_cam_trans.detach(), init_scale.detach(), points
         )
 
         print("SMPL parameters fitted")
+        return pred_pose, pred_betas, pred_scale, pred_cam_trans
 
-        return pred_pose, pred_betas, pred_cam_t, pred_alpha
+    def save_smpl_ply(
+        self,
+        pose: torch.tensor,
+        betas: torch.tensor,
+        scale: torch.tensor,
+        cam_trans: torch.tensor,
+        center_trans: torch.tensor,
+        filename: str,
+    ) -> None:
+        """Save SMPL point cloud
+        Input:
+        Output:
+        """
 
-    def save_smpl_ply(self, betas, pose, cam_t, trans_back, alpha, filename):
-
-        # save the final results
         output = self.smplmodel(
-            betas=betas, global_orient=pose[:, :3], body_pose=pose[:, 3:], transl=cam_t + trans_back, return_verts=True
+            betas=betas,
+            global_orient=pose[:, :3],
+            body_pose=pose[:, 3:],
+            transl=cam_trans + center_trans,
+            return_verts=True,
         )
-        outputVerts = torch.mul(output.vertices, alpha).detach().cpu().numpy().squeeze()
-        mesh = trimesh.Trimesh(vertices=outputVerts, faces=self.smplmodel.faces, process=False)
+        scaled_outputVerts = torch.mul(output.vertices, scale).detach().cpu().numpy().squeeze()
+        mesh = trimesh.Trimesh(vertices=scaled_outputVerts, faces=self.smplmodel.faces, process=False)
         mesh.export(filename)
+
+        print(f"Predicted SMPL saved to {filename}")
+        return None
