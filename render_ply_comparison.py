@@ -28,4 +28,4 @@ axis_mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1, origin=[0,
 combined_pcd = red_pcd + blue_pcd
 
 # Visualize the combined point clouds and the coordinate frame
-o3d.visualization.draw_geometries([combined_pcd, axis_mesh])
+o3d.visualization.draw_geometries([combined_pcd])

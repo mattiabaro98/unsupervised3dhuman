@@ -6,3 +6,4 @@ results/*.ply
 results/*.npz
 *.csv
 *.pyc
+store_epoch.json

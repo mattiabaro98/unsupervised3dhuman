@@ -1,9 +1,8 @@
 import os
 
+import trimesh
+
 from SMPLfitter import SMPLfitter
-
-# import trimesh
-
 
 file_pc = "ex5rot.ply"
 name, _ = os.path.splitext(file_pc)
@@ -20,8 +19,8 @@ init_pose, init_betas, init_scale, init_cam_trans, center_trans = fitter.initial
 pred_pose, pred_betas, pred_scale, pred_cam_trans = fitter.smpl_fit(centered_points, init_pose, init_betas, init_scale, init_cam_trans)
 
 # Store results
-# mesh = trimesh.Trimesh()
-# mesh.vertices = sampled_points
-# mesh.export(f"./results/{name}_sampled.ply")
+mesh = trimesh.Trimesh()
+mesh.vertices = sampled_points
+mesh.export(f"./results/{name}_sampled.ply")
 
 fitter.save_smpl_ply(pred_pose, pred_betas, pred_scale, pred_cam_trans, center_trans, f"./results/{name}_predicted.ply")

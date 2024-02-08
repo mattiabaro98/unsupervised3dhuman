@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -80,8 +82,8 @@ class surface_EM_depth:
             camera_translation: Camera translation
         """
 
-        body_pose = init_pose[:, 3:].detach().clone()
         global_orient = init_pose[:, :3].detach().clone()
+        body_pose = init_pose[:, 3:].detach().clone()
         scale = init_scale.detach().clone()
         betas = init_betas.detach().clone()
         camera_translation = init_cam_trans.clone()
@@ -89,13 +91,15 @@ class surface_EM_depth:
         preserve_betas = init_betas.detach().clone()
         preserve_pose = init_pose[:, 3:].detach().clone()
 
-        body_pose.requires_grad = True
         global_orient.requires_grad = True
+        body_pose.requires_grad = True
         betas.requires_grad = True
         scale.requires_grad = True
         camera_translation.requires_grad = True
         body_opt_params = [body_pose, global_orient, betas, scale, camera_translation]
         body_optimizer = torch.optim.LBFGS(body_opt_params, max_iter=20, lr=self.learning_rate, line_search_fn="strong_wolfe")
+
+        store_epoch = {"loss": [], "betas": [], "global_orient": [], "body_pose": [], "scale": [], "camera_translation": [], "sigma": []}
 
         for i in tqdm(range(self.num_iters)):
 
@@ -110,17 +114,17 @@ class surface_EM_depth:
                 )
 
                 modelVerts = smpl_output.vertices[:, self.selected_index]
-                modelVerts = torch.mul(modelVerts, scale)
+                scaled_modelVerts = torch.mul(modelVerts, scale)
 
                 sigma = (0.1**2) * (self.num_iters - i + 1) / self.num_iters
-                probInput, modelInd, meshInd = self.prob_cal(modelVerts, meshVerts, sigma=sigma, mu=self.mu)
+                probInput, modelInd, meshInd = self.prob_cal(scaled_modelVerts, meshVerts, sigma=sigma, mu=self.mu)
 
                 loss = body_fitting_loss_em(
                     body_pose,
                     preserve_pose,
                     betas,
                     preserve_betas,
-                    modelVerts,
+                    scaled_modelVerts,
                     meshVerts,
                     modelInd,
                     meshInd,
@@ -129,17 +133,30 @@ class surface_EM_depth:
                     smpl_output,
                     self.modelfaces,
                     pose_prior_weight=4.78 * 3.0,
+                    shape_prior_weight=4.0,
+                    angle_prior_weight=15.2,
+                    betas_preserve_weight=4.0,
                     pose_preserve_weight=3.0,
-                    correspond_weight=1000.0,
                     chamfer_weight=100.0,
+                    correspond_weight=1000.0,
                     point2mesh_weight=200.0,
-                    shape_prior_weight=2.0,
                 )
 
                 loss.backward()
                 return loss
 
-            body_optimizer.step(closure)
+            loss = body_optimizer.step(closure)
+
+            store_epoch["loss"].append(loss.tolist()),
+            store_epoch["betas"].append(betas.tolist()[0]),
+            store_epoch["global_orient"].append(global_orient.tolist()[0]),
+            store_epoch["body_pose"].append(body_pose.tolist()[0]),
+            store_epoch["scale"].append(scale.tolist()),
+            store_epoch["camera_translation"].append(camera_translation.tolist()[0])
+            store_epoch["sigma"].append((0.1**2) * (self.num_iters - i + 1) / self.num_iters)
+
+            with open("./store_epoch.json", "w") as f:
+                json.dump(store_epoch, f)
 
         pose = torch.cat([global_orient, body_pose], dim=-1).detach()
         betas = betas.detach()

@@ -1,5 +1,3 @@
-import csv
-
 import torch
 from pytorch3d.structures import Meshes, Pointclouds
 
@@ -23,13 +21,6 @@ def angle_prior(pose):
     """
     # We subtract 3 because pose does not include the global rotation of the model
     return torch.exp(pose[:, [55 - 3, 58 - 3, 12 - 3, 15 - 3]] * torch.tensor([1.0, -1.0, -1, -1.0], device=pose.device)) ** 2
-
-
-# Function to write a single row to a CSV file
-def write_row_to_csv(file_path, row_data):
-    with open(file_path, mode="a", newline="") as csv_file:
-        csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(row_data)
 
 
 # ----- use body fitting with index EM ----------
@@ -76,24 +67,9 @@ def body_fitting_loss_em(
 
     chamfer_loss = (chamfer_weight**2) * get_chamfer_loss(meshVerts, modelVerts)[0] + ((chamfer_weight / 4.0) ** 2) * get_chamfer_loss(meshVerts, modelVerts)[1]
 
-    # chamfer_loss =  (chamfer_weight **2) * chamfer_distance(meshVerts,  modelVerts)[0]
     point2mesh_loss = (point2mesh_weight**2) * get_point2mesh_loss(meshVerts, smpl_output, 1, modelfaces)
 
     total_loss = correspond_loss + pose_prior_loss + angle_prior_loss + shape_prior_loss + betas_preserve_loss + pose_preserve_loss + chamfer_loss + point2mesh_loss
-
-    partial = [
-        correspond_loss.item(),
-        pose_prior_loss.item(),
-        angle_prior_loss.item(),
-        shape_prior_loss.item(),
-        betas_preserve_loss.item(),
-        pose_preserve_loss.item(),
-        chamfer_loss.item(),
-        point2mesh_loss.item(),
-    ]
-
-    file_path = "loss.csv"
-    write_row_to_csv(file_path, partial)
 
     return total_loss.sum()
 
@@ -114,7 +90,6 @@ def get_point2mesh_loss(point_arr, smploutput, batchSize, modelface):
     meshes = Meshes(verts_list, faces_list)
     pcls = Pointclouds(points_list)
 
-    # point2mesh_loss
     point2mesh_loss, _ = point_mesh_face_distance_sep(meshes, pcls)
 
     return point2mesh_loss
