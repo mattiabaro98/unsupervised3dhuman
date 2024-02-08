@@ -13,43 +13,33 @@ class surface_EM_depth:
     def __init__(
         self,
         smplxmodel,
-        step_size=1e-1,
+        learning_rate=1e-1,
         batch_size=1,
         num_iters=100,
         selected_index=np.arange(6890),
-        use_collision=False,
         device=torch.device("cuda:0"),
-        GMM_MODEL_DIR="./SMPLfitter/smpl_models/",
         mu=0.05,
     ):
 
         # Store options
         self.batch_size = batch_size
         self.device = device
-        self.step_size = step_size
-
+        self.learning_rate = learning_rate
         self.num_iters = num_iters
         # GMM pose prior
-        self.pose_prior = MaxMixturePrior(prior_folder=GMM_MODEL_DIR, num_gaussians=8, dtype=torch.float32).to(device)
+        self.pose_prior = MaxMixturePrior(prior_folder="./SMPLfitter/smpl_models/", num_gaussians=8, dtype=torch.float32).to(device)
         # Load SMPL-X model
         self.smpl = smplxmodel
         self.modelfaces = torch.from_numpy(np.int32(smplxmodel.faces)).to(device)
         self.selected_index = selected_index
-
-        # mesh intersection
-        self.model_faces = smplxmodel.faces_tensor.view(-1)
-        self.use_collision = use_collision
 
         # mu prob
         self.mu = mu
 
     @torch.no_grad()
     def prob_cal(self, modelVerts_in, meshVerts_in, sigma=0.05**2, mu=0.02):
-        modelVerts_sq = torch.squeeze(modelVerts_in)
-        meshVerts_sq = torch.squeeze(meshVerts_in)
-
-        modelVerts = modelVerts_sq
-        meshVerts = meshVerts_sq
+        modelVerts = torch.squeeze(modelVerts_in)
+        meshVerts = torch.squeeze(meshVerts_in)
 
         model_x, model_y, model_z = torch.split(modelVerts, [1, 1, 1], dim=1)
         mesh_x, mesh_y, mesh_z = torch.split(meshVerts, [1, 1, 1], dim=1)
@@ -57,23 +47,14 @@ class surface_EM_depth:
         M = model_x.shape[0]
         N = mesh_x.shape[0]
 
-        delta_x = torch.repeat_interleave(torch.transpose(mesh_x, 0, 1), M, dim=0) - torch.repeat_interleave(
-            model_x, N, dim=1
-        )
-        delta_y = torch.repeat_interleave(torch.transpose(mesh_y, 0, 1), M, dim=0) - torch.repeat_interleave(
-            model_y, N, dim=1
-        )
-        delta_z = torch.repeat_interleave(torch.transpose(mesh_z, 0, 1), M, dim=0) - torch.repeat_interleave(
-            model_z, N, dim=1
-        )
+        delta_x = torch.repeat_interleave(torch.transpose(mesh_x, 0, 1), M, dim=0) - torch.repeat_interleave(model_x, N, dim=1)
+        delta_y = torch.repeat_interleave(torch.transpose(mesh_y, 0, 1), M, dim=0) - torch.repeat_interleave(model_y, N, dim=1)
+        delta_z = torch.repeat_interleave(torch.transpose(mesh_z, 0, 1), M, dim=0) - torch.repeat_interleave(model_z, N, dim=1)
 
         deltaVerts = delta_x * delta_x + delta_y * delta_y + delta_z * delta_z
 
-        sigmaInit = sigma
-        d = 3.0  # three dimension
-        mu_c = ((2.0 * torch.asin(torch.tensor(1.0)) * sigmaInit) ** (d / 2.0) * mu * M) / ((1 - mu) * N)
-
-        deltaExp = torch.exp(-deltaVerts / (2 * sigmaInit))
+        mu_c = ((2.0 * torch.asin(torch.tensor(1.0)) * sigma) ** (3.0 / 2.0) * mu * M) / ((1 - mu) * N)
+        deltaExp = torch.exp(-deltaVerts / (2 * sigma))
         deltaExpN = torch.repeat_interleave(torch.reshape(torch.sum(deltaExp, dim=0), (1, N)), M, dim=0)
         probArray = deltaExp / (deltaExpN + mu_c)
 
@@ -84,12 +65,12 @@ class surface_EM_depth:
         return probInput, modelInd, meshInd
 
     # ---- get the man function hrere
-    def __call__(self, init_pose, init_betas, init_cam_t, init_alpha, meshVerts):
+    def __call__(self, init_pose, init_betas, init_scale, init_cam_trans, meshVerts):
         """Perform body fitting.
         Input:
             init_pose: SMPL pose
             init_betas: SMPL betas
-            init_cam_t: Camera translation
+            init_cam_trans: Camera translation
             meshVerts: point3d from mesh
         Returns:
             vertices: Vertices of optimized shape
@@ -99,36 +80,23 @@ class surface_EM_depth:
             camera_translation: Camera translation
         """
 
-        ### add the mesh inter-section to avoid
-        search_tree = None
-        pen_distance = None
-        filter_faces = None
-
-        # Make camera translation a learnable parameter
-        # Split SMPL pose to body pose and global orientation
         body_pose = init_pose[:, 3:].detach().clone()
         global_orient = init_pose[:, :3].detach().clone()
-
-        camera_translation = init_cam_t.clone()
-
+        scale = init_scale.detach().clone()
         betas = init_betas.detach().clone()
+        camera_translation = init_cam_trans.clone()
+
         preserve_betas = init_betas.detach().clone()
         preserve_pose = init_pose[:, 3:].detach().clone()
 
-        alpha = init_alpha.detach().clone()
-
-        # -------- Step : Optimize use surface points ---------
-        betas.requires_grad = True
         body_pose.requires_grad = True
         global_orient.requires_grad = True
+        betas.requires_grad = True
+        scale.requires_grad = True
         camera_translation.requires_grad = True
-        alpha.requires_grad = True
-        body_opt_params = [body_pose, global_orient, betas, camera_translation, alpha]  #
+        body_opt_params = [body_pose, global_orient, betas, scale, camera_translation]
+        body_optimizer = torch.optim.LBFGS(body_opt_params, max_iter=20, lr=self.learning_rate, line_search_fn="strong_wolfe")
 
-        # optimize the body_pose
-        body_optimizer = torch.optim.LBFGS(
-            body_opt_params, max_iter=20, lr=self.step_size, line_search_fn="strong_wolfe"
-        )  #
         for i in tqdm(range(self.num_iters)):
 
             def closure():
@@ -142,19 +110,16 @@ class surface_EM_depth:
                 )
 
                 modelVerts = smpl_output.vertices[:, self.selected_index]
-                modelVerts = torch.mul(modelVerts, alpha)
-                # calculate the probInput
-                probInput, modelInd, meshInd = self.prob_cal(
-                    modelVerts, meshVerts, sigma=(0.1**2) * (self.num_iters - i + 1) / self.num_iters, mu=self.mu
-                )
-                # sigma=(0.1**2)*(self.num_iters-i+1)/self.num_iters
+                modelVerts = torch.mul(modelVerts, scale)
+
+                sigma = (0.1**2) * (self.num_iters - i + 1) / self.num_iters
+                probInput, modelInd, meshInd = self.prob_cal(modelVerts, meshVerts, sigma=sigma, mu=self.mu)
 
                 loss = body_fitting_loss_em(
                     body_pose,
                     preserve_pose,
                     betas,
                     preserve_betas,
-                    camera_translation,
                     modelVerts,
                     meshVerts,
                     modelInd,
@@ -169,12 +134,6 @@ class surface_EM_depth:
                     chamfer_weight=100.0,
                     point2mesh_weight=200.0,
                     shape_prior_weight=2.0,
-                    use_collision=self.use_collision,
-                    model_vertices=smpl_output.vertices,
-                    model_faces=self.model_faces,
-                    search_tree=search_tree,
-                    pen_distance=pen_distance,
-                    filter_faces=filter_faces,
                 )
 
                 loss.backward()
@@ -184,7 +143,7 @@ class surface_EM_depth:
 
         pose = torch.cat([global_orient, body_pose], dim=-1).detach()
         betas = betas.detach()
+        scale = scale.detach()
         camera_translation = camera_translation.detach()
-        alpha = alpha.detach()
 
-        return pose, betas, camera_translation, alpha
+        return pose, betas, scale, camera_translation

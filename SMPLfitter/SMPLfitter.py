@@ -32,9 +32,7 @@ class SMPLfitter:
 
         # Initialize SMPL model
         self.smpl_params_path = "./SMPLfitter/smpl_models/"
-        self.smplmodel = smplx.create(self.smpl_params_path, model_type="smpl", gender=self.smpl_gender, ext="pkl").to(
-            self.device
-        )
+        self.smplmodel = smplx.create(self.smpl_params_path, model_type="smpl", gender=self.smpl_gender, ext="pkl").to(self.device)
 
         # Downsample index
         SMPL_downsample_index_path = "./SMPLfitter/smpl_models/SMPL_downsample_index.pkl"
@@ -59,9 +57,7 @@ class SMPLfitter:
         Output:
         """
 
-        index = farthest_point_sample(
-            points.unsqueeze(0), npoint=2048
-        ).squeeze()  # Return sampled indexes from farthest_point_sample
+        index = farthest_point_sample(points.unsqueeze(0), npoint=2048).squeeze()  # Return sampled indexes from farthest_point_sample
         sampled_points = points[index]  # Select sampled indexes
 
         print("Sampled point cloud with %s points" % sampled_points.shape[0])
@@ -79,9 +75,7 @@ class SMPLfitter:
         print("Point cloud centered")
         return points, center_trans
 
-    def initialize_params(
-        self, center_trans: torch.tensor
-    ) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
+    def initialize_params(self, center_trans: torch.tensor) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
         """Initilize Parameters
         Input:
         Output:
@@ -118,9 +112,7 @@ class SMPLfitter:
             device=self.device,
         )
 
-        pred_pose, pred_betas, pred_scale, pred_cam_trans = depthEM(
-            init_pose.detach(), init_betas.detach(), init_cam_trans.detach(), init_scale.detach(), points
-        )
+        pred_pose, pred_betas, pred_scale, pred_cam_trans = depthEM(init_pose.detach(), init_betas.detach(), init_scale.detach(), init_cam_trans.detach(), points)
 
         print("SMPL parameters fitted")
         return pred_pose, pred_betas, pred_scale, pred_cam_trans

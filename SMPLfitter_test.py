@@ -17,9 +17,7 @@ centered_points, center_trans = fitter.center_pc(sampled_points)
 
 init_pose, init_betas, init_scale, init_cam_trans, center_trans = fitter.initialize_params(center_trans)
 
-pred_pose, pred_betas, pred_scale, pred_cam_trans = fitter.smpl_fit(
-    centered_points, init_pose, init_betas, init_scale, init_cam_trans
-)
+pred_pose, pred_betas, pred_scale, pred_cam_trans = fitter.smpl_fit(centered_points, init_pose, init_betas, init_scale, init_cam_trans)
 
 # Store results
 # mesh = trimesh.Trimesh()
