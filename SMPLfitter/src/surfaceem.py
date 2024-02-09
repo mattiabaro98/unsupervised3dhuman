@@ -67,7 +67,7 @@ class surface_EM_depth:
         return probInput, modelInd, meshInd
 
     # ---- get the man function hrere
-    def __call__(self, init_pose, init_betas, init_scale, init_cam_trans, meshVerts):
+    def __call__(self, init_pose, init_betas, init_scale, init_cam_trans, init_back_trans, front_meshVerts, back_meshVerts):
         """Perform body fitting.
         Input:
             init_pose: SMPL pose
@@ -87,6 +87,7 @@ class surface_EM_depth:
         scale = init_scale.detach().clone()
         betas = init_betas.detach().clone()
         camera_translation = init_cam_trans.clone()
+        back_trans = init_back_trans.clone()
 
         preserve_betas = init_betas.detach().clone()
         preserve_pose = init_pose[:, 3:].detach().clone()
@@ -96,10 +97,11 @@ class surface_EM_depth:
         betas.requires_grad = True
         scale.requires_grad = True
         camera_translation.requires_grad = True
-        body_opt_params = [body_pose, global_orient, betas, scale, camera_translation]
+        back_trans.requires_grad = True
+        body_opt_params = [body_pose, global_orient, betas, scale, camera_translation, back_trans]
         body_optimizer = torch.optim.LBFGS(body_opt_params, max_iter=20, lr=self.learning_rate, line_search_fn="strong_wolfe")
 
-        store_epoch = {"loss": [], "betas": [], "global_orient": [], "body_pose": [], "scale": [], "camera_translation": [], "sigma": []}
+        store_epoch = {"loss": [], "betas": [], "global_orient": [], "body_pose": [], "scale": [], "camera_translation": [], "back_trans": [], "sigma": []}
 
         for i in tqdm(range(self.num_iters)):
 
@@ -116,19 +118,44 @@ class surface_EM_depth:
                 modelVerts = smpl_output.vertices[:, self.selected_index]
                 scaled_modelVerts = torch.mul(modelVerts, scale)
 
-                sigma = (0.1**2) * (self.num_iters - i + 1) / self.num_iters
-                probInput, modelInd, meshInd = self.prob_cal(scaled_modelVerts, meshVerts, sigma=sigma, mu=self.mu)
+                trans_back_meshVerts = torch.add(back_meshVerts, back_trans)
 
-                loss = body_fitting_loss_em(
+                sigma = (0.1**2) * (self.num_iters - i + 1) / self.num_iters
+                front_probInput, front_modelInd, front_meshInd = self.prob_cal(scaled_modelVerts, front_meshVerts, sigma=sigma, mu=self.mu)
+                back_probInput, back_modelInd, back_meshInd = self.prob_cal(scaled_modelVerts, trans_back_meshVerts, sigma=sigma, mu=self.mu)
+
+                front_loss = body_fitting_loss_em(
                     body_pose,
                     preserve_pose,
                     betas,
                     preserve_betas,
                     scaled_modelVerts,
-                    meshVerts,
-                    modelInd,
-                    meshInd,
-                    probInput,
+                    front_meshVerts,
+                    front_modelInd,
+                    front_meshInd,
+                    front_probInput,
+                    self.pose_prior,
+                    smpl_output,
+                    self.modelfaces,
+                    pose_prior_weight=4.78 * 2.0,
+                    shape_prior_weight=5.0,
+                    angle_prior_weight=15.2,
+                    betas_preserve_weight=5.0,
+                    pose_preserve_weight=1.0,
+                    chamfer_weight=200.0,
+                    correspond_weight=1500.0,
+                    point2mesh_weight=0.0,
+                )
+                back_loss = body_fitting_loss_em(
+                    body_pose,
+                    preserve_pose,
+                    betas,
+                    preserve_betas,
+                    scaled_modelVerts,
+                    trans_back_meshVerts,
+                    back_modelInd,
+                    back_meshInd,
+                    back_probInput,
                     self.pose_prior,
                     smpl_output,
                     self.modelfaces,
@@ -142,6 +169,7 @@ class surface_EM_depth:
                     point2mesh_weight=0.0,
                 )
 
+                loss = front_loss + back_loss
                 loss.backward()
                 return loss
 
@@ -153,6 +181,7 @@ class surface_EM_depth:
             store_epoch["body_pose"].append(body_pose.tolist()[0]),
             store_epoch["scale"].append(scale.tolist()),
             store_epoch["camera_translation"].append(camera_translation.tolist()[0])
+            store_epoch["back_trans"].append(back_trans.tolist()[0])
             store_epoch["sigma"].append((0.1**2) * (self.num_iters - i + 1) / self.num_iters)
 
             with open("./store_epoch.json", "w") as f:
@@ -162,5 +191,6 @@ class surface_EM_depth:
         betas = betas.detach()
         scale = scale.detach()
         camera_translation = camera_translation.detach()
+        back_trans = back_trans.detach()
 
-        return pose, betas, scale, camera_translation
+        return pose, betas, scale, camera_translation, back_trans
