@@ -4,7 +4,7 @@ import trimesh
 
 from SMPLfitter import SMPLfitter
 
-file_pc = "ex1front_rot.ply"
+file_pc = "ex3front_rot.ply"
 name, _ = os.path.splitext(file_pc)
 input_file = "./examples/" + file_pc
 

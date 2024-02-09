@@ -1,10 +1,10 @@
 import numpy as np
 import open3d as o3d
 
-n = 7
-
-ply_path = f"./examples/ex{n}.ply"
-output_ply_path = f"./examples/ex{n}rot.ply"
+n = 1
+direction = "back"
+ply_path = f"./examples/ex{n}{direction}.ply"
+output_ply_path = f"./examples/ex{n}{direction}_rot.ply"
 
 pcd = o3d.io.read_point_cloud(ply_path)
 

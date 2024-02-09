@@ -1,9 +1,9 @@
 import numpy as np
 import open3d as o3d
 
-n = 5
-file1 = f"./examples/ex{n}rot.ply"
-file2 = f"./results/ex{n}rot_predicted.ply"
+n = 3
+file1 = f"./results/ex{n}front_rot_sampled.ply"
+file2 = f"./results/ex{n}front_rot_predicted.ply"
 
 
 pcd1 = o3d.io.read_point_cloud(file1)
