@@ -132,14 +132,14 @@ class surface_EM_depth:
                     self.pose_prior,
                     smpl_output,
                     self.modelfaces,
-                    pose_prior_weight=4.78 * 3.0,
-                    shape_prior_weight=4.0,
+                    pose_prior_weight=4.78 * 2.0,
+                    shape_prior_weight=5.0,
                     angle_prior_weight=15.2,
-                    betas_preserve_weight=4.0,
-                    pose_preserve_weight=3.0,
-                    chamfer_weight=100.0,
-                    correspond_weight=1000.0,
-                    point2mesh_weight=200.0,
+                    betas_preserve_weight=10.0,
+                    pose_preserve_weight=1.0,
+                    chamfer_weight=200.0,
+                    correspond_weight=1500.0,
+                    point2mesh_weight=0.0,
                 )
 
                 loss.backward()
