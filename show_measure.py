@@ -75,8 +75,8 @@ right_arm_pcd.paint_uniform_color([0, 1, 0])
 # partial_pcd.points = o3d.utility.Vector3dVector(xyz)
 # partial_pcd.paint_uniform_color([1, 0, 0])
 
-upper_y = 0.84
-lower_y = -0.95
+upper_y = np.mean(xyz[indexes["head_tip"]][:, 1])
+lower_y = np.mean(xyz[indexes["feet_soles"]][:, 1])
 
 upper_plane = o3d.geometry.TriangleMesh.create_box(width=1, height=0.01, depth=1)
 upper_plane.translate([-0.5, upper_y, -0.5])

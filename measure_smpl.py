@@ -69,7 +69,9 @@ pcd = o3d.io.read_point_cloud(file)
 xyz = np.array(pcd.points)
 
 real_height = 1.73
-smpl_height = 0.84 + 0.95
+upper_y = np.mean(xyz[indexes["head_tip"]][:, 1])
+lower_y = np.mean(xyz[indexes["feet_soles"]][:, 1])
+smpl_height = upper_y - lower_y
 
 left_tight = compute_length(xyz[indexes["left_tight"]]) * real_height / smpl_height
 right_tight = compute_length(xyz[indexes["right_tight"]]) * real_height / smpl_height
