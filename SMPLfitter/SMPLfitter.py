@@ -110,16 +110,19 @@ class SMPLfitter:
         depthEM = surface_EM_depth(
             smplxmodel=self.smplmodel,
             batch_size=1,
-            num_iters=100,
+            num_iters=10,
             selected_index=self.selected_index,
             device=self.device,
         )
 
-        pred_pose, pred_betas, pred_scale, pred_cam_trans, pred_back_trans = depthEM(init_pose.detach(), init_betas.detach(), init_scale.detach(), init_cam_trans.detach(), init_back_trans.detach(), front_points, back_points)
+        pred_pose, pred_betas, pred_scale, pred_cam_trans, pred_back_trans = depthEM(
+            init_pose.detach(), init_betas.detach(), init_scale.detach(), init_cam_trans.detach(), init_back_trans.detach(), front_points, back_points
+        )
 
-        back_points = torch.add(back_points, pred_back_trans)
+        trans_back_points = torch.add(back_points, pred_back_trans)
+        combo_points = torch.cat([front_points, trans_back_points], dim=1)
         print("SMPL parameters fitted")
-        return pred_pose, pred_betas, pred_scale, pred_cam_trans, pred_back_trans, front_points, back_points
+        return pred_pose, pred_betas, pred_scale, pred_cam_trans, combo_points
 
     def save_smpl_ply(
         self,
