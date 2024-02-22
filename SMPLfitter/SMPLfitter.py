@@ -75,31 +75,33 @@ class SMPLfitter:
         print("Point cloud centered")
         return points, center_trans
 
-    def initialize_params(self) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
+    def initialize_params(self) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
         """Initilize Parameters
         Input:
         Output:
         """
 
-        init_pose = torch.zeros(1, 72).to(self.device)
+        init_pose_front = torch.zeros(1, 72).to(self.device)
+        init_pose_back = torch.zeros(1, 72).to(self.device)
         init_betas = torch.zeros(1, 10).to(self.device)
         init_scale = torch.tensor(1, dtype=torch.float32).to(self.device)
-        init_cam_trans = torch.zeros(1, 3).to(self.device)
-        init_back_trans = torch.zeros(1, 3).to(self.device)
+        init_cam_trans_front = torch.zeros(1, 3).to(self.device)
+        init_cam_trans_back = torch.zeros(1, 3).to(self.device)
 
         print("Parameters initialized initialized")
-        return init_pose, init_betas, init_scale, init_cam_trans, init_back_trans
+        return init_pose_front, init_pose_back, init_betas, init_scale, init_cam_trans_front, init_cam_trans_back
 
     def smpl_fit(
         self,
         front_points: torch.tensor,
         back_points: torch.tensor,
-        init_pose: torch.tensor,
+        init_pose_front: torch.tensor,
+        init_pose_back: torch.tensor,
         init_betas: torch.tensor,
         init_scale: torch.tensor,
-        init_cam_trans: torch.tensor,
-        init_back_trans: torch.tensor,
-    ) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
+        init_cam_trans_front: torch.tensor,
+        init_cam_trans_back: torch.tensor,
+    ) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
         """Fit SMPL model
         Input:
         Output:
@@ -110,19 +112,19 @@ class SMPLfitter:
         depthEM = surface_EM_depth(
             smplxmodel=self.smplmodel,
             batch_size=1,
-            num_iters=10,
+            num_iters=50,
             selected_index=self.selected_index,
             device=self.device,
         )
 
-        pred_pose, pred_betas, pred_scale, pred_cam_trans, pred_back_trans = depthEM(
-            init_pose.detach(), init_betas.detach(), init_scale.detach(), init_cam_trans.detach(), init_back_trans.detach(), front_points, back_points
+        pred_pose_front, pred_pose_back, pred_betas, pred_scale, pred_cam_trans_front, pred_cam_trans_back = depthEM(
+            init_pose_front.detach(), init_pose_back.detach(), init_betas.detach(), init_scale.detach(), init_cam_trans_front.detach(), init_cam_trans_back.detach(), front_points, back_points
         )
 
-        trans_back_points = torch.add(back_points, pred_back_trans)
-        combo_points = torch.cat([front_points, trans_back_points], dim=1)
+        # trans_back_points = torch.add(back_points, pred_back_trans)
+        # combo_points = torch.cat([front_points, trans_back_points], dim=1)
         print("SMPL parameters fitted")
-        return pred_pose, pred_betas, pred_scale, pred_cam_trans, combo_points
+        return pred_pose_front, pred_pose_back, pred_betas, pred_scale, pred_cam_trans_front, pred_cam_trans_back
 
     def save_smpl_ply(
         self,

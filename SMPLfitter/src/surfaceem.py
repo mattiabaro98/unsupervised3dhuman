@@ -67,7 +67,7 @@ class surface_EM_depth:
         return probInput, modelInd, meshInd
 
     # ---- get the man function hrere
-    def __call__(self, init_pose, init_betas, init_scale, init_cam_trans, init_back_trans, front_meshVerts, back_meshVerts):
+    def __call__(self, init_pose_front, init_pose_back, init_betas, init_scale, init_cam_trans_front, init_cam_trans_back, front_meshVerts, back_meshVerts):
         """Perform body fitting.
         Input:
             init_pose: SMPL pose
@@ -82,87 +82,104 @@ class surface_EM_depth:
             camera_translation: Camera translation
         """
 
-        global_orient = init_pose[:, :3].detach().clone()
-        body_pose = init_pose[:, 3:].detach().clone()
+        global_orient_front = init_pose_front[:, :3].detach().clone()
+        body_pose_front = init_pose_front[:, 3:].detach().clone()
+        global_orient_back = init_pose_back[:, :3].detach().clone()
+        body_pose_back = init_pose_back[:, 3:].detach().clone()
         scale = init_scale.detach().clone()
         betas = init_betas.detach().clone()
-        camera_translation = init_cam_trans.clone()
-        back_trans = init_back_trans.clone()
+        camera_translation_front = init_cam_trans_front.clone()
+        camera_translation_back = init_cam_trans_back.clone()
 
         preserve_betas = init_betas.detach().clone()
-        preserve_pose = init_pose[:, 3:].detach().clone()
+        preserve_pose_front = init_pose_front[:, 3:].detach().clone()
+        preserve_pose_back = init_pose_back[:, 3:].detach().clone()
 
-        global_orient.requires_grad = True
-        body_pose.requires_grad = True
+        global_orient_front.requires_grad = True
+        body_pose_front.requires_grad = True
+        global_orient_back.requires_grad = True
+        body_pose_back.requires_grad = True
         betas.requires_grad = True
         scale.requires_grad = True
-        camera_translation.requires_grad = True
-        back_trans.requires_grad = True
-        body_opt_params = [body_pose, global_orient, betas, scale, camera_translation, back_trans]
+        camera_translation_front.requires_grad = True
+        camera_translation_back.requires_grad = True
+        body_opt_params = [body_pose_front, global_orient_front, body_pose_back, global_orient_back, betas, scale, camera_translation_front, camera_translation_back]
         body_optimizer = torch.optim.LBFGS(body_opt_params, max_iter=20, lr=self.learning_rate, line_search_fn="strong_wolfe")
 
-        store_epoch = {"loss": [], "betas": [], "global_orient": [], "body_pose": [], "scale": [], "camera_translation": [], "back_trans": [], "sigma": []}
+        store_epoch = {"loss": [], "betas": [], "global_orient": [], "body_pose": [], "scale": [], "camera_translation": [], "sigma": []}
 
         for i in tqdm(range(self.num_iters)):
 
             def closure():
                 body_optimizer.zero_grad()
-                smpl_output = self.smpl(
-                    global_orient=global_orient,
-                    body_pose=body_pose,
+                smpl_output_front = self.smpl(
+                    global_orient=global_orient_front,
+                    body_pose=body_pose_front,
                     betas=betas,
-                    transl=camera_translation,
+                    transl=camera_translation_front,
                     return_verts=True,
                 )
 
-                modelVerts = smpl_output.vertices[:, self.selected_index]
-                scaled_modelVerts = torch.mul(modelVerts, scale)
+                smpl_output_back = self.smpl(
+                    global_orient=global_orient_back,
+                    body_pose=body_pose_back,
+                    betas=betas,
+                    transl=camera_translation_back,
+                    return_verts=True,
+                )
 
-                trans_back_meshVerts = torch.add(back_meshVerts, back_trans)
+                modelVerts_front = smpl_output_front.vertices[:, self.selected_index]
+                scaled_modelVerts_front = torch.mul(modelVerts_front, scale)
+
+                modelVerts_back = smpl_output_back.vertices[:, self.selected_index]
+                scaled_modelVerts_back = torch.mul(modelVerts_back, scale)
 
                 sigma = (0.1**2) * (self.num_iters - i + 1) / self.num_iters
-                front_probInput, front_modelInd, front_meshInd = self.prob_cal(scaled_modelVerts, front_meshVerts, sigma=sigma, mu=self.mu)
-                back_probInput, back_modelInd, back_meshInd = self.prob_cal(scaled_modelVerts, trans_back_meshVerts, sigma=sigma, mu=self.mu)
+                front_probInput, front_modelInd, front_meshInd = self.prob_cal(scaled_modelVerts_front, front_meshVerts, sigma=sigma, mu=self.mu)
+                back_probInput, back_modelInd, back_meshInd = self.prob_cal(scaled_modelVerts_back, back_meshVerts, sigma=sigma, mu=self.mu)
+
+                betas_preserve_weight = 3.0
+                shape_prior_weight = 5.0
 
                 front_loss = body_fitting_loss_em(
-                    body_pose,
-                    preserve_pose,
+                    body_pose_front,
+                    preserve_pose_front,
                     betas,
                     preserve_betas,
-                    scaled_modelVerts,
+                    scaled_modelVerts_front,
                     front_meshVerts,
                     front_modelInd,
                     front_meshInd,
                     front_probInput,
                     self.pose_prior,
-                    smpl_output,
+                    smpl_output_front,
                     self.modelfaces,
                     pose_prior_weight=4.78 * 2.0,
-                    shape_prior_weight=5.0,
+                    shape_prior_weight=shape_prior_weight,
                     angle_prior_weight=15.2,
-                    betas_preserve_weight=5.0,
+                    betas_preserve_weight=betas_preserve_weight,
                     pose_preserve_weight=1.0,
                     chamfer_weight=200.0,
                     correspond_weight=1500.0,
                     point2mesh_weight=0.0,
                 )
                 back_loss = body_fitting_loss_em(
-                    body_pose,
-                    preserve_pose,
+                    body_pose_back,
+                    preserve_pose_back,
                     betas,
                     preserve_betas,
-                    scaled_modelVerts,
-                    trans_back_meshVerts,
+                    scaled_modelVerts_back,
+                    back_meshVerts,
                     back_modelInd,
                     back_meshInd,
                     back_probInput,
                     self.pose_prior,
-                    smpl_output,
+                    smpl_output_back,
                     self.modelfaces,
                     pose_prior_weight=4.78 * 2.0,
-                    shape_prior_weight=5.0,
+                    shape_prior_weight=shape_prior_weight,
                     angle_prior_weight=15.2,
-                    betas_preserve_weight=10.0,
+                    betas_preserve_weight=betas_preserve_weight,
                     pose_preserve_weight=1.0,
                     chamfer_weight=200.0,
                     correspond_weight=1500.0,
@@ -177,20 +194,20 @@ class surface_EM_depth:
 
             store_epoch["loss"].append(loss.tolist()),
             store_epoch["betas"].append(betas.tolist()[0]),
-            store_epoch["global_orient"].append(global_orient.tolist()[0]),
-            store_epoch["body_pose"].append(body_pose.tolist()[0]),
+            store_epoch["global_orient"].append(global_orient_front.tolist()[0]),
+            store_epoch["body_pose"].append(body_pose_front.tolist()[0]),
             store_epoch["scale"].append(scale.tolist()),
-            store_epoch["camera_translation"].append(camera_translation.tolist()[0])
-            store_epoch["back_trans"].append(back_trans.tolist()[0])
+            store_epoch["camera_translation"].append(camera_translation_front.tolist()[0])
             store_epoch["sigma"].append((0.1**2) * (self.num_iters - i + 1) / self.num_iters)
 
             with open("./store_epoch.json", "w") as f:
                 json.dump(store_epoch, f)
 
-        pose = torch.cat([global_orient, body_pose], dim=-1).detach()
+        pose_front = torch.cat([global_orient_front, body_pose_front], dim=-1).detach()
+        pose_back = torch.cat([global_orient_back, body_pose_back], dim=-1).detach()
         betas = betas.detach()
         scale = scale.detach()
-        camera_translation = camera_translation.detach()
-        back_trans = back_trans.detach()
+        camera_translation_front = camera_translation_front.detach()
+        camera_translation_back = camera_translation_back.detach()
 
-        return pose, betas, scale, camera_translation, back_trans
+        return pose_front, pose_back, betas, scale, camera_translation_front, camera_translation_back
