@@ -63,10 +63,10 @@ def compute_length(xyz):
 with open("./SMPL_index_measure.json") as json_file:
     indexes = json.load(json_file)
 
-file = "./results/ex3front_rot_predicted.ply"
-# real_height = 1.73
+file = "./results/ex1front_pred.ply"
+real_height = 1.73
 # real_height = 1.69
-real_height = 1.83
+# real_height = 1.83
 
 pcd = o3d.io.read_point_cloud(file)
 xyz = np.array(pcd.points)

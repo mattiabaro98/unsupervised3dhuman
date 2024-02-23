@@ -3,7 +3,7 @@ import json
 import numpy as np
 import open3d as o3d
 
-file = "./results/ex5rot_predicted.ply"
+file = "./results/ex1front_pred.ply"
 
 with open("./SMPL_index_measure.json") as json_file:
     indexes = json.load(json_file)
