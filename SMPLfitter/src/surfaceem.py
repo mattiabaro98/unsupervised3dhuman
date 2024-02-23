@@ -128,25 +128,32 @@ class surface_EM_depth:
                     return_verts=True,
                 )
 
-                modelVerts_front = smpl_output_front.vertices[:, self.selected_index]
-                scaled_modelVerts_front = torch.mul(modelVerts_front, scale)
+                smpl_output_front.vertices = torch.mul(smpl_output_front.vertices, scale)
+                smpl_output_back.vertices = torch.mul(smpl_output_back.vertices, scale)
 
+                modelVerts_front = smpl_output_front.vertices[:, self.selected_index]
                 modelVerts_back = smpl_output_back.vertices[:, self.selected_index]
-                scaled_modelVerts_back = torch.mul(modelVerts_back, scale)
 
                 sigma = (0.1**2) * (self.num_iters - i + 1) / self.num_iters
-                front_probInput, front_modelInd, front_meshInd = self.prob_cal(scaled_modelVerts_front, front_meshVerts, sigma=sigma, mu=self.mu)
-                back_probInput, back_modelInd, back_meshInd = self.prob_cal(scaled_modelVerts_back, back_meshVerts, sigma=sigma, mu=self.mu)
+                front_probInput, front_modelInd, front_meshInd = self.prob_cal(modelVerts_front, front_meshVerts, sigma=sigma, mu=self.mu)
+                back_probInput, back_modelInd, back_meshInd = self.prob_cal(modelVerts_back, back_meshVerts, sigma=sigma, mu=self.mu)
 
-                betas_preserve_weight = 3.0
-                shape_prior_weight = 5.0
+
+                pose_prior_weight=4.78
+                shape_prior_weight=5.0
+                angle_prior_weight=15.2
+                betas_preserve_weight=1.0
+                pose_preserve_weight=1.0
+                chamfer_weight=2000.0
+                correspond_weight=800.0
+                point2mesh_weight=5000.0
 
                 front_loss = body_fitting_loss_em(
                     body_pose_front,
                     preserve_pose_front,
                     betas,
                     preserve_betas,
-                    scaled_modelVerts_front,
+                    modelVerts_front,
                     front_meshVerts,
                     front_modelInd,
                     front_meshInd,
@@ -154,21 +161,21 @@ class surface_EM_depth:
                     self.pose_prior,
                     smpl_output_front,
                     self.modelfaces,
-                    pose_prior_weight=4.78 * 2.0,
+                    pose_prior_weight=pose_prior_weight,
                     shape_prior_weight=shape_prior_weight,
-                    angle_prior_weight=15.2,
+                    angle_prior_weight=angle_prior_weight,
                     betas_preserve_weight=betas_preserve_weight,
-                    pose_preserve_weight=1.0,
-                    chamfer_weight=200.0,
-                    correspond_weight=1500.0,
-                    point2mesh_weight=0.0,
+                    pose_preserve_weight=pose_preserve_weight,
+                    chamfer_weight=chamfer_weight,
+                    correspond_weight=correspond_weight,
+                    point2mesh_weight=point2mesh_weight,
                 )
                 back_loss = body_fitting_loss_em(
                     body_pose_back,
                     preserve_pose_back,
                     betas,
                     preserve_betas,
-                    scaled_modelVerts_back,
+                    modelVerts_back,
                     back_meshVerts,
                     back_modelInd,
                     back_meshInd,
@@ -176,14 +183,14 @@ class surface_EM_depth:
                     self.pose_prior,
                     smpl_output_back,
                     self.modelfaces,
-                    pose_prior_weight=4.78 * 2.0,
+                    pose_prior_weight=pose_prior_weight,
                     shape_prior_weight=shape_prior_weight,
-                    angle_prior_weight=15.2,
+                    angle_prior_weight=angle_prior_weight,
                     betas_preserve_weight=betas_preserve_weight,
-                    pose_preserve_weight=1.0,
-                    chamfer_weight=200.0,
-                    correspond_weight=1500.0,
-                    point2mesh_weight=0.0,
+                    pose_preserve_weight=pose_preserve_weight,
+                    chamfer_weight=chamfer_weight,
+                    correspond_weight=correspond_weight,
+                    point2mesh_weight=point2mesh_weight,
                 )
 
                 loss = front_loss + back_loss
