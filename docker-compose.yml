@@ -1,0 +1,13 @@
+services:
+  test:
+    image: nvcr.io/nvidia/pytorch:23.12-py3
+    command: tail -f /dev/null
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - .:/home/unsupervised3dhuman
