@@ -63,7 +63,7 @@ class SMPLfitter:
         print("Sampled point cloud with %s points" % sampled_points.shape[0])
         return sampled_points
 
-    def center_pc(self, points: torch.tensor) -> (torch.tensor, torch.tensor):
+    def center_pc(self, points: torch.tensor) -> tuple[torch.tensor, torch.tensor]:
         """Center point cloud
         Input:
         Output:
@@ -75,7 +75,7 @@ class SMPLfitter:
         print("Point cloud centered")
         return points, center_trans
 
-    def initialize_params(self) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
+    def initialize_params(self) -> tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor]:
         """Initilize Parameters
         Input:
         Output:
@@ -101,7 +101,7 @@ class SMPLfitter:
         init_scale: torch.tensor,
         init_cam_trans_front: torch.tensor,
         init_cam_trans_back: torch.tensor,
-    ) -> (torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor):
+    ) -> tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor]:
         """Fit SMPL model
         Input:
         Output:
@@ -121,8 +121,6 @@ class SMPLfitter:
             init_pose_front.detach(), init_pose_back.detach(), init_betas.detach(), init_scale.detach(), init_cam_trans_front.detach(), init_cam_trans_back.detach(), front_points, back_points
         )
 
-        # trans_back_points = torch.add(back_points, pred_back_trans)
-        # combo_points = torch.cat([front_points, trans_back_points], dim=1)
         print("SMPL parameters fitted")
         return pred_pose_front, pred_pose_back, pred_betas, pred_scale, pred_cam_trans_front, pred_cam_trans_back
 

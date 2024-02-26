@@ -1,9 +1,7 @@
 env/
 lint_env/
-SMPLfitter/__pycache__/
-SMPLfitter/usr/__pycache__/
+__pycache__/
 results/*.ply
-results/*.npz
 *.csv
 *.pyc
 store_epoch.json
