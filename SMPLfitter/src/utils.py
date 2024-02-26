@@ -132,7 +132,9 @@ class _PointFaceDistance(Function):
             face `(v0, v1, v2)`
 
         """
-        dists, idxs = _C.point_face_dist_forward(points, points_first_idx, tris, tris_first_idx, max_points, float(1e-5))
+        dists, idxs = _C.point_face_dist_forward(
+            points, points_first_idx, tris, tris_first_idx, max_points, float(1e-5)
+        )
         ctx.save_for_backward(points, tris, idxs)
         return dists
 
@@ -300,7 +302,11 @@ def _handle_pointcloud_input(
         if normals is not None and normals.ndim != 3:
             raise ValueError("Expected normals to be of shape (N, P, 3")
     else:
-        raise ValueError("The input pointclouds should be either " + "Pointclouds objects or torch.Tensor of shape " + "(minibatch, num_points, 3).")
+        raise ValueError(
+            "The input pointclouds should be either "
+            + "Pointclouds objects or torch.Tensor of shape "
+            + "(minibatch, num_points, 3)."
+        )
     return X, lengths, normals
 
 

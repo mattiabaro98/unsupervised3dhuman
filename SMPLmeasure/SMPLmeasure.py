@@ -5,6 +5,7 @@ import trimesh
 from scipy.spatial import ConvexHull
 from skspatial.objects import Plane, Points
 
+
 class SMPLmeasure:
     """Measure SMPL"""
 
@@ -12,7 +13,7 @@ class SMPLmeasure:
 
         with open("./SMPLmeasure/SMPL_index_measure.json") as json_file:
             self.indexes = json.load(json_file)
-    
+
     def _compute_convex_hull(self, points):
         """
         Compute the convex hull from a 2D numpy array of points.
@@ -34,8 +35,7 @@ class SMPLmeasure:
 
         return hull_vertices
 
-
-    def _compute_length(self,xyz):
+    def _compute_length(self, xyz):
         points = Points(xyz)
         plane = Plane.best_fit(points)
         normal = np.array(plane.normal)
@@ -65,7 +65,7 @@ class SMPLmeasure:
         length += np.linalg.norm(convex_hull[-1] - convex_hull[0])
 
         return length
-    
+
     def measure_smpl(self, filename, height):
 
         mesh = trimesh.load(filename)
@@ -95,8 +95,7 @@ class SMPLmeasure:
             "waist": waist,
             "hip": hip,
             "left_arm": left_arm,
-            "right_arm": right_arm
-
+            "right_arm": right_arm,
         }
-        
+
         return results

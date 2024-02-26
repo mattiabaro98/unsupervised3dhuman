@@ -32,7 +32,9 @@ class SMPLfitter:
 
         # Initialize SMPL model
         self.smpl_params_path = "./SMPLfitter/smpl_models/"
-        self.smplmodel = smplx.create(self.smpl_params_path, model_type="smpl", gender=self.smpl_gender, ext="pkl").to(self.device)
+        self.smplmodel = smplx.create(self.smpl_params_path, model_type="smpl", gender=self.smpl_gender, ext="pkl").to(
+            self.device
+        )
 
         # Downsample index
         SMPL_downsample_index_path = "./SMPLfitter/smpl_models/SMPL_downsample_index.pkl"
@@ -57,7 +59,9 @@ class SMPLfitter:
         Output:
         """
 
-        index = farthest_point_sample(points.unsqueeze(0), npoint=2048).squeeze()  # Return sampled indexes from farthest_point_sample
+        index = farthest_point_sample(
+            points.unsqueeze(0), npoint=2048
+        ).squeeze()  # Return sampled indexes from farthest_point_sample
         sampled_points = points[index]  # Select sampled indexes
 
         print("Sampled point cloud with %s points" % sampled_points.shape[0])
@@ -75,7 +79,9 @@ class SMPLfitter:
         print("Point cloud centered")
         return points, center_trans
 
-    def initialize_params(self) -> tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor]:
+    def initialize_params(
+        self,
+    ) -> tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor]:
         """Initilize Parameters
         Input:
         Output:
@@ -118,7 +124,14 @@ class SMPLfitter:
         )
 
         pred_pose_front, pred_pose_back, pred_betas, pred_scale, pred_cam_trans_front, pred_cam_trans_back = depthEM(
-            init_pose_front.detach(), init_pose_back.detach(), init_betas.detach(), init_scale.detach(), init_cam_trans_front.detach(), init_cam_trans_back.detach(), front_points, back_points
+            init_pose_front.detach(),
+            init_pose_back.detach(),
+            init_betas.detach(),
+            init_scale.detach(),
+            init_cam_trans_front.detach(),
+            init_cam_trans_back.detach(),
+            front_points,
+            back_points,
         )
 
         print("SMPL parameters fitted")

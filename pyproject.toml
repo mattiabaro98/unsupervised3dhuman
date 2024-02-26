@@ -35,7 +35,7 @@ skip_glob = ["*/venv/*", "*/env/*", "*/docs/*", "*/lint_env/*"]
 
 
 [tool.black]
-line-length = 200
+line-length = 120
 exclude = '''
     lint_env\/|venv\/|env\/|docs\/|notebooks\/|poc\_materials\/|\.buildozer\/
 '''

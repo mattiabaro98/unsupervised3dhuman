@@ -12,5 +12,4 @@ pcd = o3d.io.read_point_cloud(args.filename)
 
 xyz = np.array(pcd.points)
 
-axis_mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1, origin=[0, 0, 0])
-o3d.visualization.draw([pcd, axis_mesh])
+o3d.visualization.draw([pcd])

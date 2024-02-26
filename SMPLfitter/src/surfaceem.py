@@ -29,7 +29,9 @@ class surface_EM_depth:
         self.learning_rate = learning_rate
         self.num_iters = num_iters
         # GMM pose prior
-        self.pose_prior = MaxMixturePrior(prior_folder="./SMPLfitter/smpl_models/", num_gaussians=8, dtype=torch.float32).to(device)
+        self.pose_prior = MaxMixturePrior(
+            prior_folder="./SMPLfitter/smpl_models/", num_gaussians=8, dtype=torch.float32
+        ).to(device)
         # Load SMPL-X model
         self.smpl = smplxmodel
         self.modelfaces = torch.from_numpy(np.int32(smplxmodel.faces)).to(device)
@@ -49,9 +51,15 @@ class surface_EM_depth:
         M = model_x.shape[0]
         N = mesh_x.shape[0]
 
-        delta_x = torch.repeat_interleave(torch.transpose(mesh_x, 0, 1), M, dim=0) - torch.repeat_interleave(model_x, N, dim=1)
-        delta_y = torch.repeat_interleave(torch.transpose(mesh_y, 0, 1), M, dim=0) - torch.repeat_interleave(model_y, N, dim=1)
-        delta_z = torch.repeat_interleave(torch.transpose(mesh_z, 0, 1), M, dim=0) - torch.repeat_interleave(model_z, N, dim=1)
+        delta_x = torch.repeat_interleave(torch.transpose(mesh_x, 0, 1), M, dim=0) - torch.repeat_interleave(
+            model_x, N, dim=1
+        )
+        delta_y = torch.repeat_interleave(torch.transpose(mesh_y, 0, 1), M, dim=0) - torch.repeat_interleave(
+            model_y, N, dim=1
+        )
+        delta_z = torch.repeat_interleave(torch.transpose(mesh_z, 0, 1), M, dim=0) - torch.repeat_interleave(
+            model_z, N, dim=1
+        )
 
         deltaVerts = delta_x * delta_x + delta_y * delta_y + delta_z * delta_z
 
@@ -67,7 +75,17 @@ class surface_EM_depth:
         return probInput, modelInd, meshInd
 
     # ---- get the man function hrere
-    def __call__(self, init_pose_front, init_pose_back, init_betas, init_scale, init_cam_trans_front, init_cam_trans_back, front_meshVerts, back_meshVerts):
+    def __call__(
+        self,
+        init_pose_front,
+        init_pose_back,
+        init_betas,
+        init_scale,
+        init_cam_trans_front,
+        init_cam_trans_back,
+        front_meshVerts,
+        back_meshVerts,
+    ):
         """Perform body fitting.
         Input:
             init_pose: SMPL pose
@@ -103,10 +121,29 @@ class surface_EM_depth:
         scale.requires_grad = True
         camera_translation_front.requires_grad = True
         camera_translation_back.requires_grad = True
-        body_opt_params = [body_pose_front, global_orient_front, body_pose_back, global_orient_back, betas, scale, camera_translation_front, camera_translation_back]
-        body_optimizer = torch.optim.LBFGS(body_opt_params, max_iter=20, lr=self.learning_rate, line_search_fn="strong_wolfe")
+        body_opt_params = [
+            body_pose_front,
+            global_orient_front,
+            body_pose_back,
+            global_orient_back,
+            betas,
+            scale,
+            camera_translation_front,
+            camera_translation_back,
+        ]
+        body_optimizer = torch.optim.LBFGS(
+            body_opt_params, max_iter=20, lr=self.learning_rate, line_search_fn="strong_wolfe"
+        )
 
-        store_epoch = {"loss": [], "betas": [], "global_orient": [], "body_pose": [], "scale": [], "camera_translation": [], "sigma": []}
+        store_epoch = {
+            "loss": [],
+            "betas": [],
+            "global_orient": [],
+            "body_pose": [],
+            "scale": [],
+            "camera_translation": [],
+            "sigma": [],
+        }
 
         for i in tqdm(range(self.num_iters)):
 
@@ -135,18 +172,21 @@ class surface_EM_depth:
                 modelVerts_back = smpl_output_back.vertices[:, self.selected_index]
 
                 sigma = (0.1**2) * (self.num_iters - i + 1) / self.num_iters
-                front_probInput, front_modelInd, front_meshInd = self.prob_cal(modelVerts_front, front_meshVerts, sigma=sigma, mu=self.mu)
-                back_probInput, back_modelInd, back_meshInd = self.prob_cal(modelVerts_back, back_meshVerts, sigma=sigma, mu=self.mu)
+                front_probInput, front_modelInd, front_meshInd = self.prob_cal(
+                    modelVerts_front, front_meshVerts, sigma=sigma, mu=self.mu
+                )
+                back_probInput, back_modelInd, back_meshInd = self.prob_cal(
+                    modelVerts_back, back_meshVerts, sigma=sigma, mu=self.mu
+                )
 
-
-                pose_prior_weight=4.78
-                shape_prior_weight=5.0
-                angle_prior_weight=15.2
-                betas_preserve_weight=1.0
-                pose_preserve_weight=1.0
-                chamfer_weight=2000.0
-                correspond_weight=800.0
-                point2mesh_weight=5000.0
+                pose_prior_weight = 4.78
+                shape_prior_weight = 5.0
+                angle_prior_weight = 15.2
+                betas_preserve_weight = 1.0
+                pose_preserve_weight = 1.0
+                chamfer_weight = 2000.0
+                correspond_weight = 800.0
+                point2mesh_weight = 5000.0
 
                 front_loss = body_fitting_loss_em(
                     body_pose_front,

@@ -86,7 +86,18 @@ lower_plane = o3d.geometry.TriangleMesh.create_box(width=1, height=0.01, depth=1
 lower_plane.translate([-0.5, lower_y, -0.5])
 lower_plane.paint_uniform_color([1, 0, 0])
 
-combined_pcd = left_arm_pcd + right_arm_pcd + hip_pcd + waist_pcd + chest_pcd + left_tight_pcd + right_tight_pcd + left_calf_pcd + right_calf_pcd + pcd
+combined_pcd = (
+    left_arm_pcd
+    + right_arm_pcd
+    + hip_pcd
+    + waist_pcd
+    + chest_pcd
+    + left_tight_pcd
+    + right_tight_pcd
+    + left_calf_pcd
+    + right_calf_pcd
+    + pcd
+)
 
 # Visualize the combined point clouds and the coordinate frame
 o3d.visualization.draw_geometries([combined_pcd, upper_plane, lower_plane])

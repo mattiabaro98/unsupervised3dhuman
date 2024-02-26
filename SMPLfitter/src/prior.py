@@ -10,7 +10,9 @@ DEFAULT_DTYPE = torch.float32
 
 
 class MaxMixturePrior(nn.Module):
-    def __init__(self, prior_folder="prior", num_gaussians=6, dtype=DEFAULT_DTYPE, epsilon=1e-16, use_merged=True, **kwargs):
+    def __init__(
+        self, prior_folder="prior", num_gaussians=6, dtype=DEFAULT_DTYPE, epsilon=1e-16, use_merged=True, **kwargs
+    ):
         super(MaxMixturePrior, self).__init__()
 
         if dtype == DEFAULT_DTYPE:
