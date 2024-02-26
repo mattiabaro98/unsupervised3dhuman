@@ -1,10 +1,10 @@
 from __future__ import division, print_function
 
 import joblib
-import smplx
 import torch
 import trimesh
 
+from SMPLfitter.src.smpl import SMPL
 from SMPLfitter.src.surfaceem import surface_EM_depth
 from SMPLfitter.src.utils import farthest_point_sample
 
@@ -31,10 +31,8 @@ class SMPLfitter:
             print('Wrong gender parameter, "male" or "female" accepted.')
 
         # Initialize SMPL model
-        self.smpl_params_path = "./SMPLfitter/smpl_models/"
-        self.smplmodel = smplx.create(self.smpl_params_path, model_type="smpl", gender=self.smpl_gender, ext="pkl").to(
-            self.device
-        )
+        self.smpl_params_path = "./SMPLfitter/smpl_models/smpl/"
+        self.smplmodel = SMPL(self.smpl_params_path, gender=self.smpl_gender, device=self.device)
 
         # Downsample index
         SMPL_downsample_index_path = "./SMPLfitter/smpl_models/SMPL_downsample_index.pkl"
@@ -150,14 +148,8 @@ class SMPLfitter:
         Output:
         """
 
-        output = self.smplmodel(
-            betas=betas,
-            global_orient=pose[:, :3],
-            body_pose=pose[:, 3:],
-            transl=cam_trans,
-            return_verts=True,
-        )
-        scaled_outputVerts = torch.mul(output.vertices, scale).detach().cpu().numpy().squeeze()
+        output_vertices = self.smplmodel(betas=betas.squeeze(), pose=pose.squeeze(), trans=cam_trans.squeeze())
+        scaled_outputVerts = torch.mul(output_vertices, scale).detach().cpu().numpy().squeeze()
         mesh = trimesh.Trimesh(vertices=scaled_outputVerts, faces=self.smplmodel.faces, process=False)
         mesh.export(filename)
 

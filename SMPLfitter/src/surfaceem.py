@@ -150,26 +150,22 @@ class surface_EM_depth:
             def closure():
                 body_optimizer.zero_grad()
                 smpl_output_front = self.smpl(
-                    global_orient=global_orient_front,
-                    body_pose=body_pose_front,
-                    betas=betas,
-                    transl=camera_translation_front,
-                    return_verts=True,
+                    betas=betas.squeeze(),
+                    pose=torch.cat([global_orient_front, body_pose_front], dim=-1).squeeze(),
+                    trans=camera_translation_front.squeeze(),
                 )
 
                 smpl_output_back = self.smpl(
-                    global_orient=global_orient_back,
-                    body_pose=body_pose_back,
-                    betas=betas,
-                    transl=camera_translation_back,
-                    return_verts=True,
+                    betas=betas.squeeze(),
+                    pose=torch.cat([global_orient_back, body_pose_back], dim=-1).squeeze(),
+                    trans=camera_translation_back.squeeze(),
                 )
 
-                smpl_output_front.vertices = torch.mul(smpl_output_front.vertices, scale)
-                smpl_output_back.vertices = torch.mul(smpl_output_back.vertices, scale)
+                smpl_output_front = torch.mul(smpl_output_front, scale).unsqueeze(0)
+                smpl_output_back = torch.mul(smpl_output_back, scale).unsqueeze(0)
 
-                modelVerts_front = smpl_output_front.vertices[:, self.selected_index]
-                modelVerts_back = smpl_output_back.vertices[:, self.selected_index]
+                modelVerts_front = smpl_output_front[:, self.selected_index]
+                modelVerts_back = smpl_output_back[:, self.selected_index]
 
                 sigma = (0.1**2) * (self.num_iters - i + 1) / self.num_iters
                 front_probInput, front_modelInd, front_meshInd = self.prob_cal(

@@ -101,7 +101,7 @@ def get_point2mesh_loss(point_arr, smploutput, batchSize, modelface):
     faces_list = []
     for idx in range(batchSize):
         points_list.append(point_arr[idx].squeeze())
-        verts_list.append(smploutput.vertices[idx].squeeze())
+        verts_list.append(smploutput[idx].squeeze())
         faces_list.append(modelface)
     meshes = Meshes(verts_list, faces_list)
     pcls = Pointclouds(points_list)
