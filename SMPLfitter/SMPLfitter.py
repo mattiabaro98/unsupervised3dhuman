@@ -79,7 +79,7 @@ class SMPLfitter:
 
     def initialize_params(
         self,
-    ) -> tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor]:
+    ) -> tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor]:
         """Initilize Parameters
         Input:
         Output:
@@ -88,12 +88,11 @@ class SMPLfitter:
         init_pose_front = torch.zeros(1, 72).to(self.device)
         init_pose_back = torch.zeros(1, 72).to(self.device)
         init_betas = torch.zeros(1, 10).to(self.device)
-        init_scale = torch.tensor(1, dtype=torch.float32).to(self.device)
         init_cam_trans_front = torch.zeros(1, 3).to(self.device)
         init_cam_trans_back = torch.zeros(1, 3).to(self.device)
 
         print("Parameters initialized initialized")
-        return init_pose_front, init_pose_back, init_betas, init_scale, init_cam_trans_front, init_cam_trans_back
+        return init_pose_front, init_pose_back, init_betas, init_cam_trans_front, init_cam_trans_back
 
     def smpl_fit(
         self,
@@ -102,10 +101,9 @@ class SMPLfitter:
         init_pose_front: torch.tensor,
         init_pose_back: torch.tensor,
         init_betas: torch.tensor,
-        init_scale: torch.tensor,
         init_cam_trans_front: torch.tensor,
         init_cam_trans_back: torch.tensor,
-    ) -> tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor]:
+    ) -> tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, torch.tensor]:
         """Fit SMPL model
         Input:
         Output:
@@ -121,11 +119,10 @@ class SMPLfitter:
             device=self.device,
         )
 
-        pred_pose_front, pred_pose_back, pred_betas, pred_scale, pred_cam_trans_front, pred_cam_trans_back = depthEM(
+        pred_pose_front, pred_pose_back, pred_betas, pred_cam_trans_front, pred_cam_trans_back = depthEM(
             init_pose_front.detach(),
             init_pose_back.detach(),
             init_betas.detach(),
-            init_scale.detach(),
             init_cam_trans_front.detach(),
             init_cam_trans_back.detach(),
             front_points,
@@ -133,13 +130,12 @@ class SMPLfitter:
         )
 
         print("SMPL parameters fitted")
-        return pred_pose_front, pred_pose_back, pred_betas, pred_scale, pred_cam_trans_front, pred_cam_trans_back
+        return pred_pose_front, pred_pose_back, pred_betas, pred_cam_trans_front, pred_cam_trans_back
 
     def save_smpl_ply(
         self,
         pose: torch.tensor,
         betas: torch.tensor,
-        scale: torch.tensor,
         cam_trans: torch.tensor,
         filename: str,
     ) -> None:
@@ -149,8 +145,7 @@ class SMPLfitter:
         """
 
         output_vertices = self.smplmodel(betas=betas.squeeze(), pose=pose.squeeze(), trans=cam_trans.squeeze())
-        scaled_outputVerts = torch.mul(output_vertices, scale).detach().cpu().numpy().squeeze()
-        mesh = trimesh.Trimesh(vertices=scaled_outputVerts, faces=self.smplmodel.faces, process=False)
+        mesh = trimesh.Trimesh(vertices=output_vertices.detach().cpu().numpy().squeeze(), faces=self.smplmodel.faces, process=False)
         mesh.export(filename)
 
         print(f"Predicted SMPL saved to {filename}")

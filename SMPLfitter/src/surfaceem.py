@@ -80,7 +80,6 @@ class surface_EM_depth:
         init_pose_front,
         init_pose_back,
         init_betas,
-        init_scale,
         init_cam_trans_front,
         init_cam_trans_back,
         front_meshVerts,
@@ -104,7 +103,6 @@ class surface_EM_depth:
         body_pose_front = init_pose_front[:, 3:].detach().clone()
         global_orient_back = init_pose_back[:, :3].detach().clone()
         body_pose_back = init_pose_back[:, 3:].detach().clone()
-        scale = init_scale.detach().clone()
         betas = init_betas.detach().clone()
         camera_translation_front = init_cam_trans_front.clone()
         camera_translation_back = init_cam_trans_back.clone()
@@ -118,7 +116,6 @@ class surface_EM_depth:
         global_orient_back.requires_grad = True
         body_pose_back.requires_grad = True
         betas.requires_grad = True
-        scale.requires_grad = True
         camera_translation_front.requires_grad = True
         camera_translation_back.requires_grad = True
         body_opt_params = [
@@ -127,7 +124,6 @@ class surface_EM_depth:
             body_pose_back,
             global_orient_back,
             betas,
-            scale,
             camera_translation_front,
             camera_translation_back,
         ]
@@ -140,7 +136,6 @@ class surface_EM_depth:
             "betas": [],
             "global_orient": [],
             "body_pose": [],
-            "scale": [],
             "camera_translation": [],
             "sigma": [],
         }
@@ -161,8 +156,8 @@ class surface_EM_depth:
                     trans=camera_translation_back.squeeze(),
                 )
 
-                smpl_output_front = torch.mul(smpl_output_front, scale).unsqueeze(0)
-                smpl_output_back = torch.mul(smpl_output_back, scale).unsqueeze(0)
+                smpl_output_front = smpl_output_front.unsqueeze(0)
+                smpl_output_back = smpl_output_back.unsqueeze(0)
 
                 modelVerts_front = smpl_output_front[:, self.selected_index]
                 modelVerts_back = smpl_output_back[:, self.selected_index]
@@ -239,7 +234,6 @@ class surface_EM_depth:
             store_epoch["betas"].append(betas.tolist()[0]),
             store_epoch["global_orient"].append(global_orient_front.tolist()[0]),
             store_epoch["body_pose"].append(body_pose_front.tolist()[0]),
-            store_epoch["scale"].append(scale.tolist()),
             store_epoch["camera_translation"].append(camera_translation_front.tolist()[0])
             store_epoch["sigma"].append((0.1**2) * (self.num_iters - i + 1) / self.num_iters)
 
@@ -249,8 +243,7 @@ class surface_EM_depth:
         pose_front = torch.cat([global_orient_front, body_pose_front], dim=-1).detach()
         pose_back = torch.cat([global_orient_back, body_pose_back], dim=-1).detach()
         betas = betas.detach()
-        scale = scale.detach()
         camera_translation_front = camera_translation_front.detach()
         camera_translation_back = camera_translation_back.detach()
 
-        return pose_front, pose_back, betas, scale, camera_translation_front, camera_translation_back
+        return pose_front, pose_back, betas, camera_translation_front, camera_translation_back

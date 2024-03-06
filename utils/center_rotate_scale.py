@@ -31,18 +31,21 @@ def rotate_3d_array(array, angles):
     return rotated_array
 
 
-def center_rotate(input_ply_path, output_ply_path, direction):
+def center_rotate_scale(input_ply_path, output_ply_path, direction):
 
     mesh = trimesh.load(input_ply_path)
     points = mesh.vertices
 
-    center = np.mean(points, axis=0)
-    centered_points = points - center
+    scale = 1.15
+    scaled_points = np.dot(points,scale)
+
+    center = np.mean(scaled_points, axis=0)
+    centered_points = scaled_points - center
 
     if direction == "front":
         angles = (0, 0, np.pi / 2)  # RealSense front pic
     if direction == "back":
-        angles = (0, np.pi, np.pi / 2)  # RealSense back pic
+        angles = (0, np.pi, -np.pi / 2)  # RealSense back pic
 
     rotated_points = rotate_3d_array(centered_points, angles)
 
