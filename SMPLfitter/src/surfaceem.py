@@ -170,9 +170,9 @@ class surface_EM_depth:
                     modelVerts_back, back_meshVerts, sigma=sigma, mu=self.mu
                 )
 
-                pose_prior_weight = 4.78
+                pose_prior_weight = 5.0
                 shape_prior_weight = 5.0
-                angle_prior_weight = 15.2
+                angle_prior_weight = 15.0
                 betas_preserve_weight = 1.0
                 pose_preserve_weight = 1.0
                 chamfer_weight = 2000.0
@@ -237,7 +237,7 @@ class surface_EM_depth:
             store_epoch["camera_translation"].append(camera_translation_front.tolist()[0])
             store_epoch["sigma"].append((0.1**2) * (self.num_iters - i + 1) / self.num_iters)
 
-            with open("./store_epoch.json", "w") as f:
+            with open("./results/store_epoch.json", "w") as f:
                 json.dump(store_epoch, f)
 
         pose_front = torch.cat([global_orient_front, body_pose_front], dim=-1).detach()

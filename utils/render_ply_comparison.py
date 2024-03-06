@@ -3,7 +3,7 @@ import open3d as o3d
 
 n = 1
 direction = "front"
-file1 = f"./examples/ex{n}{direction}_rot.ply"
+file1 = f"./results/ex{n}{direction}_rot.ply"
 file2 = f"./results/ex{n}{direction}_pred.ply"
 
 pcd1 = o3d.io.read_point_cloud(file1)

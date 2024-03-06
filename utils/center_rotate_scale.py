@@ -37,7 +37,7 @@ def center_rotate_scale(input_ply_path, output_ply_path, direction):
     points = mesh.vertices
 
     scale = 1.15
-    scaled_points = np.dot(points,scale)
+    scaled_points = np.dot(points, scale)
 
     center = np.mean(scaled_points, axis=0)
     centered_points = scaled_points - center

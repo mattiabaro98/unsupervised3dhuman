@@ -114,7 +114,7 @@ class SMPLfitter:
         depthEM = surface_EM_depth(
             smplxmodel=self.smplmodel,
             batch_size=1,
-            num_iters=20,
+            num_iters=50,
             selected_index=self.selected_index,
             device=self.device,
         )
@@ -145,7 +145,9 @@ class SMPLfitter:
         """
 
         output_vertices = self.smplmodel(betas=betas.squeeze(), pose=pose.squeeze(), trans=cam_trans.squeeze())
-        mesh = trimesh.Trimesh(vertices=output_vertices.detach().cpu().numpy().squeeze(), faces=self.smplmodel.faces, process=False)
+        mesh = trimesh.Trimesh(
+            vertices=output_vertices.detach().cpu().numpy().squeeze(), faces=self.smplmodel.faces, process=False
+        )
         mesh.export(filename)
 
         print(f"Predicted SMPL saved to {filename}")
