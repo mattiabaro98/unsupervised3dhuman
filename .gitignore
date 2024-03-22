@@ -1,7 +1,8 @@
 env/
 lint_env/
 __pycache__/
-results/*.ply
+examples/*
+results/*
 *.csv
 *.pyc
 store_epoch.json
