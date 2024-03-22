@@ -30,24 +30,52 @@ def rotate_3d_array(array, angles):
 
     return rotated_array
 
-
-def center_rotate_scale(input_ply_path, output_ply_path, direction):
-
-    mesh = trimesh.load(input_ply_path)
+def rotate(mesh,direction):
     points = mesh.vertices
-
-    scale = 1.15
-    scaled_points = np.dot(points, scale)
-
-    center = np.mean(scaled_points, axis=0)
-    centered_points = scaled_points - center
 
     if direction == "front":
         angles = (0, 0, np.pi / 2)  # RealSense front pic
     if direction == "back":
         angles = (0, np.pi, -np.pi / 2)  # RealSense back pic
 
-    rotated_points = rotate_3d_array(centered_points, angles)
+    mesh.vertices = rotate_3d_array(points, angles)
 
-    mesh.vertices = rotated_points
+    return mesh
+
+
+
+def remove_floor(mesh, delta):
+
+    points = mesh.vertices
+
+    mesh = trimesh.Trimesh(vertices=points[points[:, 1] > np.min(points[:, 1] + delta)])
+    
+    return mesh
+
+def scale(mesh, scale):
+    points = mesh.vertices
+
+    mesh.vertices = np.dot(points, scale)
+
+    return mesh
+
+def center(mesh):
+
+    points = mesh.vertices
+
+    mesh.vertices = points - np.mean(points, axis=0)
+
+    return mesh
+
+def preprocess(input_ply_path, output_ply_path, direction):
+
+    mesh = trimesh.load(input_ply_path)
+    
+    mesh = center(mesh)
+    mesh = rotate(mesh,direction)
+    mesh = remove_floor(mesh,0.1)
+    mesh = scale(mesh,1.15)
+    
     mesh.export(output_ply_path)
+
+

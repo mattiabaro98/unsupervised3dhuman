@@ -75,7 +75,7 @@ class SMPLfitter:
         points = torch.sub(points, center_trans)
 
         print("Point cloud centered")
-        return points, center_trans
+        return points, center_trans.to(self.device)
 
     def initialize_params(
         self,
