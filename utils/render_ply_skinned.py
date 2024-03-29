@@ -3,7 +3,7 @@ import argparse
 import trimesh
 
 parser = argparse.ArgumentParser(description="Read the contents of a file.")
-parser.add_argument("--filename", help="Path to the file to be read.")
+parser.add_argument("filename", help="Path to the file to be read.")
 
 args = parser.parse_args()
 
