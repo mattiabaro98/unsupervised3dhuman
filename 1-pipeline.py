@@ -9,16 +9,16 @@ df_ground_truth = pd.read_csv("./examples/ground_truth.csv").set_index("info")
 ground_truth_dict = df_ground_truth.to_dict()
 
 anonimos = [
-    "anonimo1",
-    "anonimo2",
-    "anonimo3",
-    "anonimo4",
-    "anonimo5",
-    "anonimo6",
-    "anonimo7",
-    "anonimo8",
-    "anonimo9",
-    "anonimo10",
+    # "anonimo1",
+    # "anonimo2",
+    # "anonimo3",
+    # "anonimo4",
+    # "anonimo5",
+    # "anonimo6",
+    # "anonimo7",
+    # "anonimo8",
+    # "anonimo9",
+    # "anonimo10",
     "anonimo11",
     "anonimo12",
     "anonimo13",
@@ -68,6 +68,7 @@ def pipeline(front_path, back_path, gender, result_path):
     fitter.save_smpl_ply(
         pred_pose_back, pred_betas, pred_cam_trans_back + back_center_trans, result_path + "back_pred.ply"
     )
+    fitter.save_smpl_ply(init_pose_front, pred_betas, init_cam_trans_back, result_path + "default_pred.ply")
 
     return None
 
@@ -80,8 +81,8 @@ for anonimo in anonimos:
             "-----------------------------------------------------------------------------------------------------------------------------"
         )
         print(anonimo, sample, ground_truth_dict[anonimo]["gender"])
-        front_path = f"./examples/{anonimo}/{sample}/a.ply"
-        back_path = f"./examples/{anonimo}/{sample}/c.ply"
+        front_path = f"./examples/{anonimo}/{sample}/e.ply"
+        back_path = f"./examples/{anonimo}/{sample}/f.ply"
         result_path = f"./results/{anonimo}_{sample}/"
 
         if not os.path.exists(result_path):
