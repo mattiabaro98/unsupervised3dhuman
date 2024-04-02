@@ -1,10 +1,8 @@
-import json
 import os
 
 import pandas as pd
 
 from SMPLfitter import SMPLfitter
-from SMPLmeasure import SMPLmeasure
 from utils.preprocess import preprocess
 
 df_ground_truth = pd.read_csv("./examples/ground_truth.csv").set_index("info")
@@ -12,30 +10,30 @@ ground_truth_dict = df_ground_truth.to_dict()
 
 anonimos = [
     "anonimo1",
-    # "anonimo2",
-    # "anonimo3",
-    # "anonimo4",
-    # "anonimo5",
-    # "anonimo6",
-    # "anonimo7",
-    # "anonimo8",
-    # "anonimo9",
-    # "anonimo10",
-    # "anonimo11",
-    # "anonimo12",
-    # "anonimo13",
-    # "anonimo14",
-    # "anonimo15",
-    # "anonimo16",
-    # "anonimo17",
-    # "anonimo18",
-    # "anonimo19",
-    # "anonimo20",
-    # "anonimo21",
+    "anonimo2",
+    "anonimo3",
+    "anonimo4",
+    "anonimo5",
+    "anonimo6",
+    "anonimo7",
+    "anonimo8",
+    "anonimo9",
+    "anonimo10",
+    "anonimo11",
+    "anonimo12",
+    "anonimo13",
+    "anonimo14",
+    "anonimo15",
+    "anonimo16",
+    "anonimo17",
+    "anonimo18",
+    "anonimo19",
+    "anonimo20",
+    "anonimo21",
 ]
 
 
-def pipeline(front_path, back_path, gender, height, result_path):
+def pipeline(front_path, back_path, gender, result_path):
 
     front_path_preprocessed = result_path + "front_proc.ply"
     back_path_preproceessed = result_path + "back_proc.ply"
@@ -71,10 +69,7 @@ def pipeline(front_path, back_path, gender, height, result_path):
         pred_pose_back, pred_betas, pred_cam_trans_back + back_center_trans, result_path + "back_pred.ply"
     )
 
-    measure_smpl = SMPLmeasure.SMPLmeasure()
-    result = measure_smpl.measure_smpl(filename=result_path + "front_pred.ply", height=height)
-
-    return result
+    return None
 
 
 for anonimo in anonimos:
@@ -84,7 +79,7 @@ for anonimo in anonimos:
         print(
             "-----------------------------------------------------------------------------------------------------------------------------"
         )
-        print(anonimo, sample, ground_truth_dict[anonimo]["gender"], ground_truth_dict[anonimo]["height"])
+        print(anonimo, sample, ground_truth_dict[anonimo]["gender"])
         front_path = f"./examples/{anonimo}/{sample}/a.ply"
         back_path = f"./examples/{anonimo}/{sample}/c.ply"
         result_path = f"./results/{anonimo}_{sample}/"
@@ -92,13 +87,9 @@ for anonimo in anonimos:
         if not os.path.exists(result_path):
             os.mkdir(result_path)
 
-        result = pipeline(
+        pipeline(
             front_path,
             back_path,
             ground_truth_dict[anonimo]["gender"],
-            float(ground_truth_dict[anonimo]["height"]),
             result_path,
         )
-
-        with open(f"./results/{anonimo}_{sample}.json", "w") as json_file:
-            json.dump(result, json_file, indent=4)
