@@ -17,13 +17,13 @@ pcd.paint_uniform_color([0, 0, 0])
 
 # minimum = -0.22
 # maximum =-0.18
-left_tight_pcd = o3d.geometry.PointCloud()
-left_tight_pcd.points = o3d.utility.Vector3dVector(xyz[indexes["left_tight"]])
-left_tight_pcd.paint_uniform_color([1, 0, 0])
+left_thigh_pcd = o3d.geometry.PointCloud()
+left_thigh_pcd.points = o3d.utility.Vector3dVector(xyz[indexes["left_thigh"]])
+left_thigh_pcd.paint_uniform_color([1, 0, 0])
 
-right_tight_pcd = o3d.geometry.PointCloud()
-right_tight_pcd.points = o3d.utility.Vector3dVector(xyz[indexes["right_tight"]])
-right_tight_pcd.paint_uniform_color([0, 1, 0])
+right_thigh_pcd = o3d.geometry.PointCloud()
+right_thigh_pcd.points = o3d.utility.Vector3dVector(xyz[indexes["right_thigh"]])
+right_thigh_pcd.paint_uniform_color([0, 1, 0])
 
 
 # minimum = -0.61
@@ -92,8 +92,8 @@ combined_pcd = (
     + hip_pcd
     + waist_pcd
     + chest_pcd
-    + left_tight_pcd
-    + right_tight_pcd
+    + left_thigh_pcd
+    + right_thigh_pcd
     + left_calf_pcd
     + right_calf_pcd
     + pcd

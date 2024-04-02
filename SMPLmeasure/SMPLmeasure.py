@@ -76,8 +76,8 @@ class SMPLmeasure:
         lower_y = np.mean(xyz[self.indexes["feet_soles"]][:, 1])
         smpl_height = upper_y - lower_y
 
-        left_tight = self._compute_length(xyz[self.indexes["left_tight"]]) * real_height / smpl_height
-        right_tight = self._compute_length(xyz[self.indexes["right_tight"]]) * real_height / smpl_height
+        left_thigh = self._compute_length(xyz[self.indexes["left_thigh"]]) * real_height / smpl_height
+        right_thigh = self._compute_length(xyz[self.indexes["right_thigh"]]) * real_height / smpl_height
         left_calf = self._compute_length(xyz[self.indexes["left_calf"]]) * real_height / smpl_height
         right_calf = self._compute_length(xyz[self.indexes["right_calf"]]) * real_height / smpl_height
         chest = self._compute_length(xyz[self.indexes["chest"]]) * real_height / smpl_height
@@ -87,9 +87,9 @@ class SMPLmeasure:
         right_arm = self._compute_length(xyz[self.indexes["right_arm"]]) * real_height / smpl_height
 
         results = {
-            "left_tight": left_tight,
-            "right_tigh": right_tight,
-            "left_calf ": left_calf,
+            "left_thigh": left_thigh,
+            "right_thigh": right_thigh,
+            "left_calf": left_calf,
             "right_calf": right_calf,
             "chest": chest,
             "waist": waist,
