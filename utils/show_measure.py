@@ -3,9 +3,9 @@ import json
 import numpy as np
 import open3d as o3d
 
-file = "./results/ex5rot_predicted.ply"
+file = "../test.ply"
 
-with open("./SMPL_index_measure.json") as json_file:
+with open("../SMPLmeasure/SMPL_index_measure.json") as json_file:
     indexes = json.load(json_file)
 
 pcd = o3d.io.read_point_cloud(file)
@@ -68,12 +68,12 @@ right_arm_pcd.points = o3d.utility.Vector3dVector(xyz[indexes["right_arm"]])
 right_arm_pcd.paint_uniform_color([0, 1, 0])
 
 
-# indexes = np.where((xyz[:, 1] > -1) & (xyz[:, 1] < 1) & (xyz[:, 0] > -1) & (xyz[:, 0] < 1))
-# print(indexes)
-# xyz = xyz[indexes]
-# partial_pcd = o3d.geometry.PointCloud()
-# partial_pcd.points = o3d.utility.Vector3dVector(xyz)
-# partial_pcd.paint_uniform_color([1, 0, 0])
+indexes_selected = np.where(((xyz[:, 1] > -0.29) & (xyz[:, 1] < -0.28) & (xyz[:, 0] > -1) & (xyz[:, 0] < -0.1)) | ((xyz[:, 1] > -0.29) & (xyz[:, 1] < -0.28) & (xyz[:, 0] > 0.1) & (xyz[:, 0] < 1)))
+print(indexes_selected)
+xyz_selected = xyz[[823, 4927]]
+partial_pcd = o3d.geometry.PointCloud()
+partial_pcd.points = o3d.utility.Vector3dVector(xyz_selected)
+partial_pcd.paint_uniform_color([0, 1, 1])
 
 upper_y = np.mean(xyz[indexes["head_tip"]][:, 1])
 lower_y = np.mean(xyz[indexes["feet_soles"]][:, 1])
@@ -87,7 +87,8 @@ lower_plane.translate([-0.5, lower_y, -0.5])
 lower_plane.paint_uniform_color([1, 0, 0])
 
 combined_pcd = (
-    left_arm_pcd
+    partial_pcd
+    + left_arm_pcd
     + right_arm_pcd
     + hip_pcd
     + waist_pcd

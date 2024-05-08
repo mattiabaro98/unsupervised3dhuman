@@ -397,5 +397,9 @@
                 6866,
                 6867,
                 6868
-        ]
+        ],
+
+        "buttock_depth_Y": [1807, 3119],
+        "buttock_heigth_Z": [1534, 3159],
+        "buttock_width_X": [823, 4927]
 }
