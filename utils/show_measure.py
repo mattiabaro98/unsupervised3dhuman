@@ -66,11 +66,11 @@ left_arm_pcd.paint_uniform_color([1, 0, 0])
 right_arm_pcd = o3d.geometry.PointCloud()
 right_arm_pcd.points = o3d.utility.Vector3dVector(xyz[indexes["right_arm"]])
 right_arm_pcd.paint_uniform_color([0, 1, 0])
+# 976,  977, 1184, 1187, 3125
 
-
-indexes_selected = np.where(((xyz[:, 1] > -0.29) & (xyz[:, 1] < -0.28) & (xyz[:, 0] > -1) & (xyz[:, 0] < -0.1)) | ((xyz[:, 1] > -0.29) & (xyz[:, 1] < -0.28) & (xyz[:, 0] > 0.1) & (xyz[:, 0] < 1)))
+indexes_selected = np.where(((xyz[:, 1] > -0.60) & (xyz[:, 1] < -0.57) & (xyz[:, 0] > 0) & (xyz[:, 0] < 1)))
 print(indexes_selected)
-xyz_selected = xyz[[823, 4927]]
+xyz_selected = xyz[[976,  977, 1184, 1187, 3125, 980]]
 partial_pcd = o3d.geometry.PointCloud()
 partial_pcd.points = o3d.utility.Vector3dVector(xyz_selected)
 partial_pcd.paint_uniform_color([0, 1, 1])
